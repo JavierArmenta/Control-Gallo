@@ -1,0 +1,1412 @@
+                        .module main.c
+                        .area text(rom, con, rel)
+ 0000                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+                        .area data(ram, con, rel)
+ 0000                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0000           _i#s::
+ 0000                   .blkb 2
+                        .area idata(rom)
+ 0000 0000              .word 0
+                        .area data(ram, con, rel)
+ 0002                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0002                   .dbsym e i _i#s S
+ 0002           _VM1#s::
+ 0002                   .blkb 2
+                        .area idata(rom)
+ 0002 0000              .word 0
+                        .area data(ram, con, rel)
+ 0004                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0004                   .dbsym e VM1 _VM1#s S
+ 0004           _VM2#s::
+ 0004                   .blkb 2
+                        .area idata(rom)
+ 0004 0000              .word 0
+                        .area data(ram, con, rel)
+ 0006                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0006                   .dbsym e VM2 _VM2#s S
+ 0006           _dM1#h::
+ 0006                   .blkb 1
+                        .area idata(rom)
+ 0006 00                .byte 0
+                        .area data(ram, con, rel)
+ 0007                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0007                   .dbsym e dM1 _dM1#h c
+ 0007           _dM2#h::
+ 0007                   .blkb 1
+                        .area idata(rom)
+ 0007 00                .byte 0
+                        .area data(ram, con, rel)
+ 0008                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0008                   .dbsym e dM2 _dM2#h c
+ 0008           _L#l::
+ 0008                   .blkb 4
+                        .area idata(rom)
+ 0008 00000000          .word 0,0
+                        .area data(ram, con, rel)
+ 000C                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 000C                   .dbsym e L _L#l L
+ 000C           _Esclavo_ID#h::
+ 000C                   .blkb 1
+                        .area idata(rom)
+ 000C 01                .byte 1
+                        .area data(ram, con, rel)
+ 000D                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 000D                   .dbsym e Esclavo_ID _Esclavo_ID#h c
+ 000D           _Haciendo#c::
+ 000D                   .blkb 1
+                        .area idata(rom)
+ 000D 00                .byte 0
+                        .area data(ram, con, rel)
+ 000E                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 000E                   .dbsym e Haciendo _Haciendo#c c
+ 000E           _idx#t::
+ 000E                   .blkb 2
+                        .area idata(rom)
+ 000E 0000              .word 0
+                        .area data(ram, con, rel)
+ 0010                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0010                   .dbsym e idx _idx#t s
+                        .area text(rom, con, rel)
+ 0000                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0000                   .dbfunc e main _main#Fvv fV
+                        .even
+ 0000           _main#Fvv::
+ 0000                   .dbline -1
+ 0000                   .dbline 101
+ 0000           ; //!Programa del sistema de control de los 2 motores ppales del gallo UAA
+ 0000           ; // Elaboro Dr. Luis Antonio Raygoza Pérez
+ 0000           ; // Fuse bits: high = 1101 1001 = D9
+ 0000           ; //                      low  = 1110 1111 = EF
+ 0000           ; 
+ 0000           ; #include <iom8v.h>
+ 0000           ; #include <macros.h>
+ 0000           ; #include <math.h>
+ 0000           ; #include <stdint.h>
+ 0000           ; #include <stdlib.h>
+ 0000           ; #include <string.h>
+ 0000           ; #include <stdbool.h>
+ 0000           ; #include <stdio.h>
+ 0000           ; #include <ctype.h>
+ 0000           ; #include <stdarg.h>
+ 0000           ; 
+ 0000           ; //!---------------------------- CONEXIONES -------------------------------------------------
+ 0000           ; //                       ---------------\/---------------
+ 0000           ; //                    RESET SPI  =|PC6(in)          PC5(?)         |= SCL I2C
+ 0000           ; //                    RX UART    =|PD0(in)          PC4(?)             |= SDA I2C
+ 0000           ; //                    TX UART    =|PD1(out)         PC3(out)           |= Led verde ?
+ 0000           ; //                    Encoder M2 =|PD2(in INT0)     PC2(in)            |= Error o sobrecorriente drivers M1 y M2
+ 0000           ; //                    Encoder M1 =|PD3(in INT1)     PC1(in ADC)        |= Corriente IM2
+ 0000           ; //                    RPWM M1    =|PD4(out)         PC0(in ADC)        |= Corriente IM1
+ 0000           ; //                    5v         =|VCC              GND                        |= GND
+ 0000           ; //                    GND        =|GND              AREF                       |= 5V
+ 0000           ; //                    XTAL 16Mhz =|PB6(in)          AVCC                       |= 5V
+ 0000           ; //                    XTAL 16Mhz =|PB7(in)          PB5(in)            |= SCK  SPI
+ 0000           ; //                    LPWM M1    =|PD5(out)         PB4(out)           |= MISO SPI
+ 0000           ; //                    Enable M1  =|PD6(out)         PB3(in)            |= MOSI SPI
+ 0000           ; //                    RPWM M2    =|PD7(out)         PB2(in pull up)|= SS   SPI
+ 0000           ; //                    LPWM M2    =|PB0(out)         PB1(out)           |= Enable M2
+ 0000           ; //                                         --------------------------------
+ 0000           ; 
+ 0000           ; //!---------------------------- DEFINICIONES ------------------------------------------
+ 0000           ; // ***** Declaracion de pines de control ***** //
+ 0000           ; #define LPWM1 (1 << 5)        //PD5   (salida)                   LPWM M1
+ 0000           ; #define RPWM1 (1 << 4)        //PD4   (salida)                   RPWM M1
+ 0000           ; #define EN_M1 (1 << 6)        //PD6   (salida)                   Enable M1
+ 0000           ; #define LPWM2 (1 << 0)        //PB0   (salida)                   LPWM M2
+ 0000           ; #define RPWM2 (1 << 7)        //PD7   (salida)                   RPWM M2
+ 0000           ; #define EN_M2 (1 << 1)        //PB1   (salida)                   Enable M2
+ 0000           ; #define LEDV  (1 << 3)        //PC3   (salida)                   Led verde ?
+ 0000           ; 
+ 0000           ; #define IM1   (1 << 0)  //PC0 (entrada ADC)      Corriente IM1
+ 0000           ; #define IM2   (1 << 1)  //PC1 (entrada ADC)      Corriente IM2
+ 0000           ; #define ERROR (1 << 2)  //PC2 (entrada)                  Error o sobrecorriente drivers M1 y M2
+ 0000           ; #define ENCM2 (1 << 2)  //PD2 (entrada INT0)     Encoder M2
+ 0000           ; #define ENCM1 (1 << 3)  //PD3 (entrada INT1)     Encoder M1
+ 0000           ; 
+ 0000           ; #define SSSPI   (1 << 2)  //PB2       (entrada pull up)  SS   SPI
+ 0000           ; #define MOSISPI (1 << 3)  //PB3       (entrada)                  MOSI SPI
+ 0000           ; #define MISOSPI (1 << 4)  //PB4       (salida)                   MISO SPI
+ 0000           ; #define SCKSPI  (1 << 5)  //PB5       (entrada)                  SCK  SPI
+ 0000           ; #define SDAI2C  (1 << 4)  //PC4       (?)                                SDA I2C
+ 0000           ; #define SCLI2C  (1 << 5)  //PC5       (?)                                SCL I2C
+ 0000           ; #define RXUART  (1 << 0)  //PD0       (entrada)                  RX UART
+ 0000           ; #define TXUART  (1 << 1)  //PD1       (salida)                   TX UART
+ 0000           ; 
+ 0000           ; // ***** Declaracion de macros de control ***** //
+ 0000           ; //SALIDAS
+ 0000           ; #define SET_LPWM1             PORTD |=  LPWM1           //prender LPWM1
+ 0000           ; #define CLR_LPWM1             PORTD &= ~LPWM1           //apagar  LPWM1
+ 0000           ; #define SET_RPWM1             PORTD |=  RPWM1           //prender RPWM1
+ 0000           ; #define CLR_RPWM1             PORTD &= ~RPWM1           //apagar  RPWM1
+ 0000           ; #define SET_EN_M1             PORTD |=  EN_M1           //prender EN_M1
+ 0000           ; #define CLR_EN_M1             PORTD &= ~EN_M1           //apagar  EN_M1
+ 0000           ; #define SET_LPWM2             PORTB |=  LPWM2           //prender LPWM2
+ 0000           ; #define CLR_LPWM2             PORTB &= ~LPWM2           //apagar  LPWM2
+ 0000           ; #define SET_RPWM2             PORTD |=  RPWM2           //prender RPWM2
+ 0000           ; #define CLR_RPWM2             PORTD &= ~RPWM2           //apagar  RPWM2
+ 0000           ; #define SET_EN_M2             PORTB |=  EN_M2           //prender EN_M2
+ 0000           ; #define CLR_EN_M2             PORTB &= ~EN_M2           //apagar  EN_M2
+ 0000           ; #define SET_LEDV              PORTC |=  LEDV            //prender LEDV
+ 0000           ; #define CLR_LEDV              PORTC &= ~LEDV            //apagar  LEDV
+ 0000           ; //ENTRADAS
+ 0000           ; #define IF_ERROR              (PINC&ERROR)==ERROR
+ 0000           ; #define NO_ERROR              (PINC&ERROR)!=ERROR
+ 0000           ; 
+ 0000           ; 
+ 0000           ; //!---------------------------- DECLARACION DE VARIABLES GLOBALES ---------------------
+ 0000           ; int16_t  i=0;                                     //contador
+ 0000           ; int16_t  VM1=0;                               //velocidad del motor 1
+ 0000           ; int16_t  VM2=0;                               //velocidad del motor 2
+ 0000           ; uint8_t  dM1=0;                     //direccion del motor 1
+ 0000           ; uint8_t  dM2=0;                     //direccion del motor 2
+ 0000           ; long     L=0;                                     //temporizacion
+ 0000           ; uint8_t  Esclavo_ID=1;
+ 0000           ; char     Haciendo=0;                //parte del ciclo que se encuentra haciendo con el Master
+ 0000           ; uint16_t idx=0,DatoSPI;             //numero de byte para transmision o recepcion y aux de dato recibido
+ 0000           ; 
+ 0000           ; //!---------------------------- DECLARACION DE FUNCIONES DE USUARIO -------------------
+ 0000           ; void     Config(void);                            //configuracion inicial de perifericos
+ 0000           ; int16_t  ADCCH(char ch);                  //realizar una conversion en el canal ch
+ 0000           ; void     ActualizaVel(void);          //actualizar la velocidad de los motores
+ 0000           ; uint8_t  SPI_SlaveTransfer(uint8_t Dato, char llamada);
+ 0000           ; void     delayms(long msec);              //rutina de retardos
+ 0000           ; 
+ 0000           ; //!---------------------------- PROGRAMA PRINCIPAL ------------------------------------
+ 0000           ; void main(void)
+ 0000           ; {
+ 0000                   .dbline 102
+ 0000           ;     Config();
+ 0000 A8D0              rcall _Config#Fvv
+ 0002                   .dbline 103
+ 0002           ;     SET_EN_M1;
+ 0002 969A              sbi 0x12,6
+ 0004                   .dbline 104
+ 0004           ;     SET_EN_M2;
+ 0004 C19A              sbi 0x18,1
+ 0006 A3C0              rjmp L3
+ 0008           L2:
+ 0008                   .dbline 112
+ 0008           ; 
+ 0008           ;     //VM1=-2047;
+ 0008           ;     //VM2=-4095;
+ 0008           ;     //ActualizaVel();
+ 0008           ; 
+ 0008           ; 
+ 0008           ;     while (1)
+ 0008           ;     {
+ 0008                   .dbline 113
+ 0008           ;         if(NO_ERROR)
+ 0008 83B3              in R24,0x13
+ 000A 8470              andi R24,4
+ 000C 8430              cpi R24,4
+ 000E 09F4              brne X11
+ 0010 9DC0              rjmp L5
+ 0012           X11:
+ 0012           X0:
+ 0012                   .dbline 115
+ 0012           ;         {
+ 0012           ;             SET_LEDV;
+ 0012                   .dbline 115
+ 0012 AB9A              sbi 0x15,3
+ 0014                   .dbline 117
+ 0014           ; 
+ 0014           ;             if(Haciendo==0)
+ 0014 20900D00          lds R2,_Haciendo#c
+ 0018 2220              tst R2
+ 001A 61F4              brne L7
+ 001C           X1:
+ 001C                   .dbline 124
+ 001C           ;             {
+ 001C           ;                 //Esperar comando del maestro
+ 001C           ;                 //'V':   //Adquirir velocidad de ambos motores
+ 001C           ;                 //'P':   //Adquirir posicion de lazo cerrado de ambos motores
+ 001C           ;                 //'S':   //El maestro va a actualizar los parametros del PID
+ 001C           ;                 //'R':   //El maestro va a leer los parametros del PID
+ 001C           ;                 Haciendo=SPI_SlaveTransfer(1,0); //Esperar comando del Master
+ 001C                   .dbline 124
+ 001C 2227              clr R18
+ 001E 01E0              ldi R16,1
+ 0020 17D1              rcall _SPI_SlaveTransfer#Fhhc
+ 0022 00930D00          sts _Haciendo#c,R16
+ 0026                   .dbline 125
+ 0026           ;                 idx=0;
+ 0026 2224              clr R2
+ 0028 3324              clr R3
+ 002A 30920F00          sts _idx#t+1,R3
+ 002E 20920E00          sts _idx#t,R2
+ 0032                   .dbline 126
+ 0032           ;             }
+ 0032 8CC0              rjmp L8
+ 0034           L7:
+ 0034                   .dbline 128
+ 0034           ;             else
+ 0034           ;             {
+ 0034                   .dbline 129
+ 0034           ;                 switch(Haciendo)
+ 0034 40910D00          lds R20,_Haciendo#c
+ 0038 5527              clr R21
+ 003A 4035              cpi R20,80
+ 003C E0E0              ldi R30,0
+ 003E 5E07              cpc R21,R30
+ 0040 09F4              brne X12
+ 0042 84C0              rjmp L10
+ 0044           X12:
+ 0044           X2:
+ 0044 4235              cpi R20,82
+ 0046 E0E0              ldi R30,0
+ 0048 5E07              cpc R21,R30
+ 004A 09F4              brne X13
+ 004C 7FC0              rjmp L10
+ 004E           X13:
+ 004E           X3:
+ 004E 4335              cpi R20,83
+ 0050 E0E0              ldi R30,0
+ 0052 5E07              cpc R21,R30
+ 0054 09F4              brne X14
+ 0056 7AC0              rjmp L10
+ 0058           X14:
+ 0058           X4:
+ 0058 4635              cpi R20,86
+ 005A E0E0              ldi R30,0
+ 005C 5E07              cpc R21,R30
+ 005E 09F0              breq L12
+ 0060           X5:
+ 0060 72C0              rjmp L9
+ 0062           L12:
+ 0062                   .dbline 132
+ 0062           ;                 {
+ 0062           ;                     case 'V':   //Adquirir velocidad de ambos motores
+ 0062           ;                             DatoSPI = SPI_SlaveTransfer(Haciendo,0);
+ 0062 2227              clr R18
+ 0064 00910D00          lds R16,_Haciendo#c
+ 0068 F3D0              rcall _SPI_SlaveTransfer#Fhhc
+ 006A 202E              mov R2,R16
+ 006C 3324              clr R3
+ 006E 30920100          sts _DatoSPI#t+1,R3
+ 0072 20920000          sts _DatoSPI#t,R2
+ 0076                   .dbline 133
+ 0076           ;                             if(idx==3)
+ 0076 80910E00          lds R24,_idx#t
+ 007A 90910F00          lds R25,_idx#t+1
+ 007E 8330              cpi R24,3
+ 0080 E0E0              ldi R30,0
+ 0082 9E07              cpc R25,R30
+ 0084 99F4              brne L13
+ 0086           X6:
+ 0086                   .dbline 135
+ 0086           ;                             {
+ 0086           ;                                 VM2 = VM2 + DatoSPI;        //Parte baja de VM2
+ 0086                   .dbline 135
+ 0086 40900400          lds R4,_VM2#s
+ 008A 50900500          lds R5,_VM2#s+1
+ 008E 420C              add R4,R2
+ 0090 531C              adc R5,R3
+ 0092 50920500          sts _VM2#s+1,R5
+ 0096 40920400          sts _VM2#s,R4
+ 009A                   .dbline 136
+ 009A           ;                                 ActualizaVel();
+ 009A 74D0              rcall _ActualizaVel#Fvv
+ 009C                   .dbline 137
+ 009C           ;                                 idx=0;
+ 009C 2224              clr R2
+ 009E 3324              clr R3
+ 00A0 30920F00          sts _idx#t+1,R3
+ 00A4 20920E00          sts _idx#t,R2
+ 00A8                   .dbline 138
+ 00A8           ;                                 Haciendo=0;                 //Termina recepcion
+ 00A8 20920D00          sts _Haciendo#c,R2
+ 00AC                   .dbline 144
+ 00AC           ; 
+ 00AC           ; 
+ 00AC           ;                                 //Falta indicar ready (a lo mejor con SS)
+ 00AC           ; 
+ 00AC           ; 
+ 00AC           ;                             }
+ 00AC           L13:
+ 00AC                   .dbline 145
+ 00AC           ;                             if(idx==2)
+ 00AC 80910E00          lds R24,_idx#t
+ 00B0 90910F00          lds R25,_idx#t+1
+ 00B4 8230              cpi R24,2
+ 00B6 E0E0              ldi R30,0
+ 00B8 9E07              cpc R25,R30
+ 00BA 81F4              brne L15
+ 00BC           X7:
+ 00BC                   .dbline 147
+ 00BC           ;                             {
+ 00BC           ;                                 VM2 = DatoSPI<<8;           //Parte alta de VM2
+ 00BC                   .dbline 147
+ 00BC 20900000          lds R2,_DatoSPI#t
+ 00C0 30900100          lds R3,_DatoSPI#t+1
+ 00C4 322C              mov R3,R2
+ 00C6 2224              clr R2
+ 00C8 30920500          sts _VM2#s+1,R3
+ 00CC 20920400          sts _VM2#s,R2
+ 00D0                   .dbline 148
+ 00D0           ;                                 idx=3;
+ 00D0 83E0              ldi R24,3
+ 00D2 90E0              ldi R25,0
+ 00D4 90930F00          sts _idx#t+1,R25
+ 00D8 80930E00          sts _idx#t,R24
+ 00DC                   .dbline 149
+ 00DC           ;                             }
+ 00DC           L15:
+ 00DC                   .dbline 150
+ 00DC           ;                             if(idx==1)
+ 00DC 80910E00          lds R24,_idx#t
+ 00E0 90910F00          lds R25,_idx#t+1
+ 00E4 8130              cpi R24,1
+ 00E6 E0E0              ldi R30,0
+ 00E8 9E07              cpc R25,R30
+ 00EA A1F4              brne L17
+ 00EC           X8:
+ 00EC                   .dbline 152
+ 00EC           ;                             {
+ 00EC           ;                                 VM1 = VM1 + DatoSPI;        //Parte baja de VM1
+ 00EC                   .dbline 152
+ 00EC 20900000          lds R2,_DatoSPI#t
+ 00F0 30900100          lds R3,_DatoSPI#t+1
+ 00F4 40900200          lds R4,_VM1#s
+ 00F8 50900300          lds R5,_VM1#s+1
+ 00FC 420C              add R4,R2
+ 00FE 531C              adc R5,R3
+ 0100 50920300          sts _VM1#s+1,R5
+ 0104 40920200          sts _VM1#s,R4
+ 0108                   .dbline 153
+ 0108           ;                                 idx=2;
+ 0108 82E0              ldi R24,2
+ 010A 90E0              ldi R25,0
+ 010C 90930F00          sts _idx#t+1,R25
+ 0110 80930E00          sts _idx#t,R24
+ 0114                   .dbline 154
+ 0114           ;                             }
+ 0114           L17:
+ 0114                   .dbline 155
+ 0114           ;                             if(idx==0)
+ 0114 20900E00          lds R2,_idx#t
+ 0118 30900F00          lds R3,_idx#t+1
+ 011C 2220              tst R2
+ 011E B1F4              brne L10
+ 0120 3320              tst R3
+ 0122 A1F4              brne L10
+ 0124           X9:
+ 0124                   .dbline 157
+ 0124           ;                             {
+ 0124           ;                                 VM1 = DatoSPI<<8;           //Parte alta de VM1
+ 0124                   .dbline 157
+ 0124 20900000          lds R2,_DatoSPI#t
+ 0128 30900100          lds R3,_DatoSPI#t+1
+ 012C 322C              mov R3,R2
+ 012E 2224              clr R2
+ 0130 30920300          sts _VM1#s+1,R3
+ 0134 20920200          sts _VM1#s,R2
+ 0138                   .dbline 158
+ 0138           ;                                 idx=1;
+ 0138 81E0              ldi R24,1
+ 013A 90E0              ldi R25,0
+ 013C 90930F00          sts _idx#t+1,R25
+ 0140 80930E00          sts _idx#t,R24
+ 0144                   .dbline 159
+ 0144           ;                             }
+ 0144                   .dbline 160
+ 0144           ;                             break;
+ 0144 03C0              rjmp L10
+ 0146           L9:
+ 0146                   .dbline 188
+ 0146           ; 
+ 0146           ;                     case 'P':   //Adquirir posicion de lazo cerrado de ambos motores
+ 0146           ; 
+ 0146           ;                             break;
+ 0146           ; 
+ 0146           ;                     case 'S':   //El maestro va a actualizar los parametros del PID
+ 0146           ; //                            if(idx<455) //0 hasta penultimo
+ 0146           ; //                            {
+ 0146           ; //                                DatoSPI = SPI_SlaveTransfer(Haciendo,0);
+ 0146           ; //                                EEPROM_write(idx,DatoSPI);
+ 0146           ; //                                idx=idx+1;
+ 0146           ; //                            }
+ 0146           ; //                            else        //ultimo 455
+ 0146           ; //                            {
+ 0146           ; //                                DatoSPI = SPI_SlaveTransfer(0,0);
+ 0146           ; //                                EEPROM_write(idx,DatoSPI);
+ 0146           ; //                                Haciendo=0;
+ 0146           ; //                                CargaParametros(); //actualiza parametros
+ 0146           ; //                            }
+ 0146           ;                             break;
+ 0146           ; 
+ 0146           ;                     case 'R':   //El maestro va a leer los parametros del PID
+ 0146           ; //                            DatoSPI = EEPROM_read(idx); idx=idx+1;
+ 0146           ; //                            Haciendo = SPI_SlaveTransfer(DatoSPI,0); //Son 455 datos en total
+ 0146           ; //                            //Haciendo = SPI_SlaveTransfer(idx,0); //Son 455 datos en total
+ 0146           ;                             break;
+ 0146           ; 
+ 0146           ;                     default:    Haciendo=0; break;
+ 0146 2224              clr R2
+ 0148 20920D00          sts _Haciendo#c,R2
+ 014C                   .dbline 188
+ 014C           L10:
+ 014C                   .dbline 190
+ 014C           ;                 }
+ 014C           ;             }
+ 014C           L8:
+ 014C                   .dbline 194
+ 014C           ; 
+ 014C           ; 
+ 014C           ; 
+ 014C           ;         }
+ 014C           L5:
+ 014C                   .dbline 195
+ 014C           ;         CLR_LEDV;
+ 014C AB98              cbi 0x15,3
+ 014E                   .dbline 198
+ 014E           ; 
+ 014E           ; 
+ 014E           ;     }
+ 014E           L3:
+ 014E                   .dbline 111
+ 014E 5CCF              rjmp L2
+ 0150           X10:
+ 0150                   .dbline -2
+ 0150           L1:
+ 0150                   .dbline 0 ; func end
+ 0150 0895              ret
+ 0152                   .dbend
+ 0152                   .dbfunc e Config _Config#Fvv fV
+                        .even
+ 0152           _Config#Fvv::
+ 0152                   .dbline -1
+ 0152                   .dbline 203
+ 0152           ; }
+ 0152           ; 
+ 0152           ; //!------------------------------ FUNCIONES DEL USUARIO -------------------------------
+ 0152           ; void Config(void)
+ 0152           ; {
+ 0152                   .dbline 204
+ 0152           ;     CLI();
+ 0152 F894              cli
+ 0154                   .dbline 214
+ 0154           ; 
+ 0154           ;     //PB0     (salida)                   LPWM M2
+ 0154           ;     //PB1     (salida)                   Enable M2
+ 0154           ;     //PB2     (entrada pull up)  SS   SPI
+ 0154           ;     //PB3     (entrada)                  MOSI SPI
+ 0154           ;     //PB4     (salida)                   MISO SPI
+ 0154           ;     //PB5     (entrada)                  SCK  SPI
+ 0154           ;     //PB6     XTAL1
+ 0154           ;     //PB7     XTAL2
+ 0154           ;     PORTB = 0b00000100;
+ 0154 84E0              ldi R24,4
+ 0156 88BB              out 0x18,R24
+ 0158                   .dbline 215
+ 0158           ;     DDRB  = 0b00010011;
+ 0158 83E1              ldi R24,19
+ 015A 87BB              out 0x17,R24
+ 015C                   .dbline 224
+ 015C           ; 
+ 015C           ;     //PC0     (entrada ADC)      Corriente IM1
+ 015C           ;     //PC1     (entrada ADC)      Corriente IM2
+ 015C           ;     //PC2     (entrada)                  Error o sobrecorriente drivers M1 y M2
+ 015C           ;     //PC3     (salida)                   Led verde ?
+ 015C           ;     //PC4     (?)                                SDA I2C
+ 015C           ;     //PC5     (?)                                SCL I2C
+ 015C           ;     //PC6     (entrada)                  RESET SPI
+ 015C           ;     PORTD = 0b00000000;
+ 015C 2224              clr R2
+ 015E 22BA              out 0x12,R2
+ 0160                   .dbline 225
+ 0160           ;     DDRC  = 0b00001000;
+ 0160 88E0              ldi R24,8
+ 0162 84BB              out 0x14,R24
+ 0164                   .dbline 235
+ 0164           ; 
+ 0164           ;     //PD0     (entrada)                  RX UART
+ 0164           ;     //PD1     (salida)                   TX UART
+ 0164           ;     //PD2     (entrada INT0)     Encoder M2
+ 0164           ;     //PD3     (entrada INT1)     Encoder M1
+ 0164           ;     //PD4     (salida)                   RPWM M1
+ 0164           ;     //PD5     (salida)                   LPWM M1
+ 0164           ;     //PD6     (salida)                   Enable M1
+ 0164           ;     //PD7     (salida)                   RPWM M2
+ 0164           ;     PORTD = 0b00000000;
+ 0164 22BA              out 0x12,R2
+ 0166                   .dbline 236
+ 0166           ;     DDRD  = 0b11110010;
+ 0166 82EF              ldi R24,242
+ 0168 81BB              out 0x11,R24
+ 016A                   .dbline 239
+ 016A           ; 
+ 016A           ;     //------------- SPI
+ 016A           ;     SPCR = (1<<SPE);           // Enable SPI
+ 016A 80E4              ldi R24,64
+ 016C 8DB9              out 0xd,R24
+ 016E                   .dbline 243
+ 016E           ; 
+ 016E           ; 
+ 016E           ;     //-------------PWM 1 y 2 usando Timer1
+ 016E           ;     TCCR1A=0x00;
+ 016E 2FBC              out 0x2f,R2
+ 0170                   .dbline 244
+ 0170           ;     TCCR1B=0x01;                                  //clk/1 para usar 10 o 12 bits
+ 0170 81E0              ldi R24,1
+ 0172 8EBD              out 0x2e,R24
+ 0174                   .dbline 256
+ 0174           ;     //TCCR1B=0x02;                              //clk/8 para usar 9bits
+ 0174           ;                                     //Si conteo desde TIMER1 hasta OVF
+ 0174           ;                                     //                                   clk/1         clk/8     clk/64
+ 0174           ;                                     //16 bits TIM1=65536-65536=0000       244Hz    30.5Hz    3.8Hz
+ 0174           ;                                     //15 bits TIM1=65536-32768=8000       488Hz    61Hz      7.6Hz
+ 0174           ;                                     //14 bits TIM1=65536-16384=C000       976Hz   122Hz     15Hz
+ 0174           ;                                     //12 bits TIM1=65536-4096 =F000      3906Hz   488Hz     61Hz
+ 0174           ;                                     //10 bits TIM1=65536-1024 =FC00   15625Hz  1953Hz    244Hz
+ 0174           ;                                     //9  bits TIM1=65536-512  =FE00       31250Hz  3906Hz    448Hz
+ 0174           ;                                     //8  bits TIM1=65536-256  =FF00       62500Hz  7812Hz    976Hz
+ 0174           ;                                     //y asi OCR=TIM1+vel
+ 0174           ;     TCNT1=0xF000;                   //Para 12 bits
+ 0174 80E0              ldi R24,61440
+ 0176 90EF              ldi R25,240
+ 0178 9DBD              out 0x2d,R25
+ 017A 8CBD              out 0x2c,R24
+ 017C                   .dbline 259
+ 017C           ;     //TCNT1=0xFC00;                   //Para 10 bits
+ 017C           ;     //TCNT1=0xFE00;                   //Para 9 bits
+ 017C           ;     TIMSK=0x1C;                                           //habilitar interrupciones compare A, B y overflow
+ 017C 8CE1              ldi R24,28
+ 017E 89BF              out 0x39,R24
+ 0180                   .dbline 260
+ 0180           ;     SEI();
+ 0180 7894              sei
+ 0182                   .dbline -2
+ 0182           L24:
+ 0182                   .dbline 0 ; func end
+ 0182 0895              ret
+ 0184                   .dbend
+ 0184                   .dbfunc e ActualizaVel _ActualizaVel#Fvv fV
+                        .even
+ 0184           _ActualizaVel#Fvv::
+ 0184                   .dbline -1
+ 0184                   .dbline 265
+ 0184           ; }
+ 0184           ; 
+ 0184           ; //!------------------------------- actualizar la velocidad de los motores
+ 0184           ; void ActualizaVel(void)
+ 0184           ; {
+ 0184                   .dbline 267
+ 0184           ;     //Actualizar PWM MOTOR1
+ 0184           ;     if(VM1!=0)
+ 0184 20900200          lds R2,_VM1#s
+ 0188 30900300          lds R3,_VM1#s+1
+ 018C 2220              tst R2
+ 018E 11F4              brne X15
+ 0190 3320              tst R3
+ 0192 E9F0              breq L26
+ 0194           X15:
+ 0194                   .dbline 269
+ 0194           ;     {
+ 0194           ;         if(VM1<0)                   //hacia atras VM1
+ 0194                   .dbline 269
+ 0194 C101              movw R24,R2
+ 0196 8030              cpi R24,0
+ 0198 E0E0              ldi R30,0
+ 019A 9E07              cpc R25,R30
+ 019C 64F4              brge L28
+ 019E           X16:
+ 019E                   .dbline 271
+ 019E           ;         {
+ 019E           ;             VM1=-VM1;
+ 019E                   .dbline 271
+ 019E 8095              com R24
+ 01A0 9095              com R25
+ 01A2 8F5F              subi R24,0xFF
+ 01A4 9F4F              sbci R25,0xFF
+ 01A6 90930300          sts _VM1#s+1,R25
+ 01AA 80930200          sts _VM1#s,R24
+ 01AE                   .dbline 272
+ 01AE           ;             dM1=2;
+ 01AE 82E0              ldi R24,2
+ 01B0 80930600          sts _dM1#h,R24
+ 01B4                   .dbline 273
+ 01B4           ;         }
+ 01B4 03C0              rjmp L29
+ 01B6           L28:
+ 01B6                   .dbline 275
+ 01B6           ;         else                        //hacia adelante VM1
+ 01B6           ;         {
+ 01B6                   .dbline 276
+ 01B6           ;             dM1=1;
+ 01B6 81E0              ldi R24,1
+ 01B8 80930600          sts _dM1#h,R24
+ 01BC                   .dbline 277
+ 01BC           ;         }
+ 01BC           L29:
+ 01BC                   .dbline 278
+ 01BC           ;         OCR1A = 0xF000 + VM1;//&0x0FFF;
+ 01BC 80910200          lds R24,_VM1#s
+ 01C0 90910300          lds R25,_VM1#s+1
+ 01C4 8050              subi R24,0  ; offset = 61440
+ 01C6 9041              sbci R25,16
+ 01C8 9BBD              out 0x2b,R25
+ 01CA 8ABD              out 0x2a,R24
+ 01CC                   .dbline 279
+ 01CC           ;     }
+ 01CC 05C0              rjmp L27
+ 01CE           L26:
+ 01CE                   .dbline 281
+ 01CE           ;     else
+ 01CE           ;     {
+ 01CE                   .dbline 282
+ 01CE           ;         dM1=0;                     //stop
+ 01CE 2224              clr R2
+ 01D0 20920600          sts _dM1#h,R2
+ 01D4                   .dbline 283
+ 01D4           ;         CLR_LPWM1;
+ 01D4 9598              cbi 0x12,5
+ 01D6                   .dbline 284
+ 01D6           ;         CLR_RPWM1;
+ 01D6 9498              cbi 0x12,4
+ 01D8                   .dbline 285
+ 01D8           ;     }
+ 01D8           L27:
+ 01D8                   .dbline 287
+ 01D8           ;     //Actualizar PWM MOTOR2
+ 01D8           ;     if(VM2!=0)
+ 01D8 20900400          lds R2,_VM2#s
+ 01DC 30900500          lds R3,_VM2#s+1
+ 01E0 2220              tst R2
+ 01E2 11F4              brne X17
+ 01E4 3320              tst R3
+ 01E6 E9F0              breq L30
+ 01E8           X17:
+ 01E8                   .dbline 289
+ 01E8           ;     {
+ 01E8           ;         if(VM2<0)                   //hacia atras VM1
+ 01E8                   .dbline 289
+ 01E8 C101              movw R24,R2
+ 01EA 8030              cpi R24,0
+ 01EC E0E0              ldi R30,0
+ 01EE 9E07              cpc R25,R30
+ 01F0 64F4              brge L32
+ 01F2           X18:
+ 01F2                   .dbline 291
+ 01F2           ;         {
+ 01F2           ;             VM2=-VM2;
+ 01F2                   .dbline 291
+ 01F2 8095              com R24
+ 01F4 9095              com R25
+ 01F6 8F5F              subi R24,0xFF
+ 01F8 9F4F              sbci R25,0xFF
+ 01FA 90930500          sts _VM2#s+1,R25
+ 01FE 80930400          sts _VM2#s,R24
+ 0202                   .dbline 292
+ 0202           ;             dM2=2;
+ 0202 82E0              ldi R24,2
+ 0204 80930700          sts _dM2#h,R24
+ 0208                   .dbline 293
+ 0208           ;         }
+ 0208 03C0              rjmp L33
+ 020A           L32:
+ 020A                   .dbline 295
+ 020A           ;         else                        //hacia adelante VM1
+ 020A           ;         {
+ 020A                   .dbline 296
+ 020A           ;             dM2=1;
+ 020A 81E0              ldi R24,1
+ 020C 80930700          sts _dM2#h,R24
+ 0210                   .dbline 297
+ 0210           ;         }
+ 0210           L33:
+ 0210                   .dbline 298
+ 0210           ;         OCR1B = 0xF000 + VM2;//&0x0FFF;
+ 0210 80910400          lds R24,_VM2#s
+ 0214 90910500          lds R25,_VM2#s+1
+ 0218 8050              subi R24,0  ; offset = 61440
+ 021A 9041              sbci R25,16
+ 021C 99BD              out 0x29,R25
+ 021E 88BD              out 0x28,R24
+ 0220                   .dbline 299
+ 0220           ;     }
+ 0220 05C0              rjmp L31
+ 0222           L30:
+ 0222                   .dbline 301
+ 0222           ;     else
+ 0222           ;     {
+ 0222                   .dbline 302
+ 0222           ;         dM2=0;                     //stop
+ 0222 2224              clr R2
+ 0224 20920700          sts _dM2#h,R2
+ 0228                   .dbline 303
+ 0228           ;         CLR_LPWM2;
+ 0228 C098              cbi 0x18,0
+ 022A                   .dbline 304
+ 022A           ;         CLR_RPWM2;
+ 022A 9798              cbi 0x12,7
+ 022C                   .dbline 305
+ 022C           ;     }
+ 022C           L31:
+ 022C                   .dbline -2
+ 022C           L25:
+ 022C                   .dbline 0 ; func end
+ 022C 0895              ret
+ 022E                   .dbend
+ 022E                   .dbfunc e ADCCH _ADCCH#Fsc fS
+ 022E           ;         ADCres -> R10,R11
+ 022E           ;             ch -> R16
+                        .even
+ 022E           _ADCCH#Fsc::
+ 022E AA92              st -y,R10
+ 0230 BA92              st -y,R11
+ 0232                   .dbline -1
+ 0232                   .dbline 310
+ 0232           ; }
+ 0232           ; 
+ 0232           ; //!--------------------------------
+ 0232           ; int16_t ADCCH(char ch)                        //realizar una conversion en el canal ch
+ 0232           ; {
+ 0232                   .dbline 312
+ 0232           ;  int ADCres;
+ 0232           ;  ADMUX=0x40|ch;
+ 0232 802F              mov R24,R16
+ 0234 8064              ori R24,64
+ 0236 87B9              out 0x7,R24
+ 0238                   .dbline 313
+ 0238           ;  ADCSRA  = 0xD7;                              //ADC enable, ADC start convertion, No conv por interrupcion, apagar bandera conv. completa
+ 0238 87ED              ldi R24,215
+ 023A 86B9              out 0x6,R24
+ 023C           L35:
+ 023C                   .dbline 315
+ 023C           ;                                                               //No int enable, presc en 64 siguientes conversiones
+ 023C           ;  while((ADCSRA&0x10)!=0x10){}   //Polling conversion completa
+ 023C                   .dbline 315
+ 023C           L36:
+ 023C                   .dbline 315
+ 023C 86B1              in R24,0x6
+ 023E 8071              andi R24,16
+ 0240 8031              cpi R24,16
+ 0242 E1F7              brne L35
+ 0244           X19:
+ 0244                   .dbline 316
+ 0244           ;  ADCres=ADC;                          //Read 8 low bits first (important)
+ 0244 A4B0              in R10,0x4
+ 0246 B5B0              in R11,0x5
+ 0248                   .dbline 317
+ 0248           ;  return ADCres;
+ 0248 8501              movw R16,R10
+ 024A                   .dbline -2
+ 024A           L34:
+ 024A                   .dbline 0 ; func end
+ 024A B990              ld R11,y+
+ 024C A990              ld R10,y+
+ 024E 0895              ret
+ 0250                   .dbsym r ADCres 10 I
+ 0250                   .dbsym r ch 16 c
+ 0250                   .dbend
+ 0250                   .dbfunc e SPI_SlaveTransfer _SPI_SlaveTransfer#Fhhc fc
+ 0250           ;        llamada -> <dead>
+ 0250           ;           Dato -> R16
+                        .even
+ 0250           _SPI_SlaveTransfer#Fhhc::
+ 0250 3A93              st -y,r19
+ 0252 2A93              st -y,r18
+ 0254                   .dbline -1
+ 0254                   .dbline 322
+ 0254           ; }
+ 0254           ; 
+ 0254           ; //!------------------------------------------------ Transferencia SPI -----------------------------------------------------
+ 0254           ; uint8_t SPI_SlaveTransfer(uint8_t Dato, char llamada)
+ 0254           ; {
+ 0254                   .dbline 324
+ 0254           ;     //dato a Transferir
+ 0254           ;     SPDR=Dato;
+ 0254 0FB9              out 0xf,R16
+ 0256                   .dbline 333
+ 0256           ;     /*if(llamada==1)
+ 0256           ;     {
+ 0256           ;         //falta esperar a que el pin no sea cero debido a otro dispositivo en la red (checar, no creo que funcione)
+ 0256           ;         //Indicar Ready
+ 0256           ;         DDRB |= 0x04;  //poner como salida PB2 (INT0)
+ 0256           ;         PORTB&=~0x04;  //PB2=0 (INT0)
+ 0256           ;     }*/
+ 0256           ;     //Limpiar bandera counter overflow y contador para comenzar envio
+ 0256           ;       SPSR = (1<<SPIF);//USISR = (1<<USIOIF);
+ 0256 80E8              ldi R24,128
+ 0258 8EB9              out 0xe,R24
+ 025A           L39:
+ 025A                   .dbline 337
+ 025A           ; 
+ 025A           ;     //while((USISR&(1<<USIOIF))!=(1<<USIOIF)){}; //Esperar a que se termine la transaccion
+ 025A           ;     //while(!(SPSR & (1<<SPIF))); // Wait for reception complete
+ 025A           ;     while((SPSR&(1<<SPIF))!=(1<<SPIF)){}; //Esperar a que se termine la transaccion
+ 025A                   .dbline 337
+ 025A           L40:
+ 025A                   .dbline 337
+ 025A 8EB1              in R24,0xe
+ 025C 8078              andi R24,128
+ 025E 8038              cpi R24,128
+ 0260 E1F7              brne L39
+ 0262           X20:
+ 0262                   .dbline 337
+ 0262                   .dbline 346
+ 0262           ; 
+ 0262           ;     /*if(llamada==1)
+ 0262           ;     {
+ 0262           ;         //Indicar busy
+ 0262           ;         DDRB &= ~0x04; //poner como entrada PB2 (INT0)
+ 0262           ;         PORTB|= 0x04;  //Pull up PB2 (INT0)
+ 0262           ;     }*/
+ 0262           ;     //Leer dato recibido
+ 0262           ;     Dato=SPDR;
+ 0262 0FB1              in R16,0xf
+ 0264                   .dbline 347
+ 0264           ;     return Dato;
+ 0264                   .dbline -2
+ 0264           L38:
+ 0264                   .dbline 0 ; func end
+ 0264 2296              adiw R28,2
+ 0266 0895              ret
+ 0268                   .dbsym l llamada 0 c
+ 0268                   .dbsym r Dato 16 c
+ 0268                   .dbend
+ 0268                   .dbfunc e delayms _delayms#Fvl fV
+ 0268           ;              j -> y+0
+ 0268           ;           msec -> y+8
+                        .even
+ 0268           _delayms#Fvl::
+ 0268 00D0              rcall push_arg4
+ 026A 00D0              rcall push_xgsetF000
+ 026C 2497              sbiw R28,4
+ 026E                   .dbline -1
+ 026E                   .dbline 352
+ 026E           ; }
+ 026E           ; 
+ 026E           ; //!--------------------------------
+ 026E           ; void delayms(long msec)
+ 026E           ; {
+ 026E                   .dbline 354
+ 026E           ;     long j;
+ 026E           ;     for(j=0;j<(msec*77);j++);
+ 026E 80E0              ldi R24,0
+ 0270 8883              std y+0,R24
+ 0272 8983              std y+1,R24
+ 0274 8A83              std y+2,R24
+ 0276 8B83              std y+3,R24
+ 0278 10C0              rjmp L46
+ 027A           L43:
+ 027A                   .dbline 354
+ 027A           L44:
+ 027A                   .dbline 354
+ 027A 41E0              ldi R20,1
+ 027C 50E0              ldi R21,0
+ 027E 60E0              ldi R22,0
+ 0280 70E0              ldi R23,0
+ 0282 2880              ldd R2,y+0
+ 0284 3980              ldd R3,y+1
+ 0286 4A80              ldd R4,y+2
+ 0288 5B80              ldd R5,y+3
+ 028A 240E              add R2,R20
+ 028C 351E              adc R3,R21
+ 028E 461E              adc R4,R22
+ 0290 571E              adc R5,R23
+ 0292 2882              std y+0,R2
+ 0294 3982              std y+1,R3
+ 0296 4A82              std y+2,R4
+ 0298 5B82              std y+3,R5
+ 029A           L46:
+ 029A                   .dbline 354
+ 029A 2884              ldd R2,y+8
+ 029C 3984              ldd R3,y+9
+ 029E 4A84              ldd R4,y+10
+ 02A0 5B84              ldd R5,y+11
+ 02A2 4DE4              ldi R20,77
+ 02A4 50E0              ldi R21,0
+ 02A6 60E0              ldi R22,0
+ 02A8 70E0              ldi R23,0
+ 02AA 5A92              st -y,R5
+ 02AC 4A92              st -y,R4
+ 02AE 3A92              st -y,R3
+ 02B0 2A92              st -y,R2
+ 02B2 8A01              movw R16,R20
+ 02B4 9B01              movw R18,R22
+ 02B6 00D0              rcall empy32s
+ 02B8 2880              ldd R2,y+0
+ 02BA 3980              ldd R3,y+1
+ 02BC 4A80              ldd R4,y+2
+ 02BE 5B80              ldd R5,y+3
+ 02C0 2016              cp R2,R16
+ 02C2 3106              cpc R3,R17
+ 02C4 4206              cpc R4,R18
+ 02C6 5306              cpc R5,R19
+ 02C8 C4F2              brlt L43
+ 02CA           X21:
+ 02CA                   .dbline -2
+ 02CA           L42:
+ 02CA                   .dbline 0 ; func end
+ 02CA 2496              adiw R28,4
+ 02CC 00D0              rcall pop_xgsetF000
+ 02CE 2496              adiw R28,4
+ 02D0 0895              ret
+ 02D2                   .dbsym l j 0 L
+ 02D2                   .dbsym l msec 8 L
+ 02D2                   .dbend
+                        .area vector(rom, abs)
+                        .org 2
+ 0002 00C0              rjmp _int0_isr
+                        .area text(rom, con, rel)
+ 02D2                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 02D2                   .dbfunc e int0_isr _int0_isr#Fvv fV
+                        .even
+ 02D2           _int0_isr#Fvv::
+ 02D2                   .dbline -1
+ 02D2                   .dbline 362
+ 02D2           ; 
+ 02D2           ; }
+ 02D2           ; //------------------------------- FUNCIONES DE INTERRUPCION --------------------------
+ 02D2           ; //------------------------------- FUNCIONES DE INTERRUPCION --------------------------
+ 02D2           ; //interrupcion externa 0
+ 02D2           ; #pragma interrupt_handler int0_isr:2
+ 02D2           ; void int0_isr(void)
+ 02D2           ; { }
+ 02D2                   .dbline -2
+ 02D2           L47:
+ 02D2                   .dbline 0 ; func end
+ 02D2 1895              reti
+ 02D4                   .dbend
+                        .area vector(rom, abs)
+                        .org 4
+ 0004 00C0              rjmp _int1_isr
+                        .area text(rom, con, rel)
+ 02D4                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 02D4                   .dbfunc e int1_isr _int1_isr#Fvv fV
+                        .even
+ 02D4           _int1_isr#Fvv::
+ 02D4                   .dbline -1
+ 02D4                   .dbline 366
+ 02D4           ; //interrupcion externa 1
+ 02D4           ; #pragma interrupt_handler int1_isr:3
+ 02D4           ; void int1_isr(void)
+ 02D4           ; { }
+ 02D4                   .dbline -2
+ 02D4           L48:
+ 02D4                   .dbline 0 ; func end
+ 02D4 1895              reti
+ 02D6                   .dbend
+                        .area vector(rom, abs)
+                        .org 6
+ 0006 00C0              rjmp _timer2_comp_isr
+                        .area text(rom, con, rel)
+ 02D6                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 02D6                   .dbfunc e timer2_comp_isr _timer2_comp_isr#Fvv fV
+                        .even
+ 02D6           _timer2_comp_isr#Fvv::
+ 02D6                   .dbline -1
+ 02D6                   .dbline 370
+ 02D6           ; //timer 2 comparacion igual
+ 02D6           ; #pragma interrupt_handler timer2_comp_isr:4
+ 02D6           ; void timer2_comp_isr(void)
+ 02D6           ; { }
+ 02D6                   .dbline -2
+ 02D6           L49:
+ 02D6                   .dbline 0 ; func end
+ 02D6 1895              reti
+ 02D8                   .dbend
+                        .area vector(rom, abs)
+                        .org 8
+ 0008 00C0              rjmp _timer2_ovf_isr
+                        .area text(rom, con, rel)
+ 02D8                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 02D8                   .dbfunc e timer2_ovf_isr _timer2_ovf_isr#Fvv fV
+                        .even
+ 02D8           _timer2_ovf_isr#Fvv::
+ 02D8                   .dbline -1
+ 02D8                   .dbline 374
+ 02D8           ; //timer 2 overflow
+ 02D8           ; #pragma interrupt_handler timer2_ovf_isr:5
+ 02D8           ; void timer2_ovf_isr(void)
+ 02D8           ; { }
+ 02D8                   .dbline -2
+ 02D8           L50:
+ 02D8                   .dbline 0 ; func end
+ 02D8 1895              reti
+ 02DA                   .dbend
+                        .area vector(rom, abs)
+                        .org 10
+ 000A 00C0              rjmp _timer1_capt_isr
+                        .area text(rom, con, rel)
+ 02DA                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 02DA                   .dbfunc e timer1_capt_isr _timer1_capt_isr#Fvv fV
+                        .even
+ 02DA           _timer1_capt_isr#Fvv::
+ 02DA                   .dbline -1
+ 02DA                   .dbline 378
+ 02DA           ; //timer 1 input capture
+ 02DA           ; #pragma interrupt_handler timer1_capt_isr:6
+ 02DA           ; void timer1_capt_isr(void)
+ 02DA           ; { }
+ 02DA                   .dbline -2
+ 02DA           L51:
+ 02DA                   .dbline 0 ; func end
+ 02DA 1895              reti
+ 02DC                   .dbend
+                        .area vector(rom, abs)
+                        .org 12
+ 000C 00C0              rjmp _timer1_compa_isr
+                        .area text(rom, con, rel)
+ 02DC                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 02DC                   .dbfunc e timer1_compa_isr _timer1_compa_isr#Fvv fV
+                        .even
+ 02DC           _timer1_compa_isr#Fvv::
+ 02DC 0A92              st -y,R0
+ 02DE 0FB6              IN R0,63
+ 02E0 0A92              st -y,R0
+ 02E2                   .dbline -1
+ 02E2                   .dbline 382
+ 02E2           ; //timer 1 comparacion igual A
+ 02E2           ; #pragma interrupt_handler timer1_compa_isr:7
+ 02E2           ; void timer1_compa_isr(void)
+ 02E2           ; {
+ 02E2                   .dbline 383
+ 02E2           ;     CLR_LPWM1;
+ 02E2 9598              cbi 0x12,5
+ 02E4                   .dbline 384
+ 02E4           ;     CLR_RPWM1;
+ 02E4 9498              cbi 0x12,4
+ 02E6                   .dbline -2
+ 02E6           L52:
+ 02E6                   .dbline 0 ; func end
+ 02E6 0990              ld R0,y+
+ 02E8 0FBE              OUT 63,R0
+ 02EA 0990              ld R0,y+
+ 02EC 1895              reti
+ 02EE                   .dbend
+                        .area vector(rom, abs)
+                        .org 14
+ 000E 00C0              rjmp _timer1_compb_isr
+                        .area text(rom, con, rel)
+ 02EE                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 02EE                   .dbfunc e timer1_compb_isr _timer1_compb_isr#Fvv fV
+                        .even
+ 02EE           _timer1_compb_isr#Fvv::
+ 02EE 0A92              st -y,R0
+ 02F0 0FB6              IN R0,63
+ 02F2 0A92              st -y,R0
+ 02F4                   .dbline -1
+ 02F4                   .dbline 389
+ 02F4           ; }
+ 02F4           ; //timer 1 comparacion igual B
+ 02F4           ; #pragma interrupt_handler timer1_compb_isr:8
+ 02F4           ; void timer1_compb_isr(void)
+ 02F4           ; {
+ 02F4                   .dbline 390
+ 02F4           ;     CLR_LPWM2;
+ 02F4 C098              cbi 0x18,0
+ 02F6                   .dbline 391
+ 02F6           ;     CLR_RPWM2;
+ 02F6 9798              cbi 0x12,7
+ 02F8                   .dbline -2
+ 02F8           L53:
+ 02F8                   .dbline 0 ; func end
+ 02F8 0990              ld R0,y+
+ 02FA 0FBE              OUT 63,R0
+ 02FC 0990              ld R0,y+
+ 02FE 1895              reti
+ 0300                   .dbend
+                        .area vector(rom, abs)
+                        .org 16
+ 0010 00C0              rjmp _timer1_ovf_isr
+                        .area text(rom, con, rel)
+ 0300                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0300                   .dbfunc e timer1_ovf_isr _timer1_ovf_isr#Fvv fV
+                        .even
+ 0300           _timer1_ovf_isr#Fvv::
+ 0300 8A93              st -y,R24
+ 0302 9A93              st -y,R25
+ 0304 8FB7              IN R24,63
+ 0306 8A93              st -y,R24
+ 0308                   .dbline -1
+ 0308                   .dbline 396
+ 0308           ; }
+ 0308           ; //timer 1 overflow
+ 0308           ; #pragma interrupt_handler timer1_ovf_isr:9
+ 0308           ; void timer1_ovf_isr(void)
+ 0308           ; {
+ 0308                   .dbline 397
+ 0308           ;   TCNT1=0xF000;          //reinicializar timer 12 bits
+ 0308 80E0              ldi R24,61440
+ 030A 90EF              ldi R25,240
+ 030C 9DBD              out 0x2d,R25
+ 030E 8CBD              out 0x2c,R24
+ 0310                   .dbline 399
+ 0310           ;   //Motor 1
+ 0310           ;   if(dM1==1)                   //hacia adelante M1
+ 0310 80910600          lds R24,_dM1#h
+ 0314 8130              cpi R24,1
+ 0316 11F4              brne L55
+ 0318           X22:
+ 0318                   .dbline 401
+ 0318           ;   {
+ 0318           ;      SET_RPWM1;
+ 0318                   .dbline 401
+ 0318 949A              sbi 0x12,4
+ 031A                   .dbline 402
+ 031A           ;      CLR_LPWM1;
+ 031A 9598              cbi 0x12,5
+ 031C                   .dbline 403
+ 031C           ;   }
+ 031C           L55:
+ 031C                   .dbline 404
+ 031C           ;   if(dM1==2)                   //hacia atras M1
+ 031C 80910600          lds R24,_dM1#h
+ 0320 8230              cpi R24,2
+ 0322 11F4              brne L57
+ 0324           X23:
+ 0324                   .dbline 406
+ 0324           ;   {
+ 0324           ;      CLR_RPWM1;
+ 0324                   .dbline 406
+ 0324 9498              cbi 0x12,4
+ 0326                   .dbline 407
+ 0326           ;      SET_LPWM1;
+ 0326 959A              sbi 0x12,5
+ 0328                   .dbline 408
+ 0328           ;   }
+ 0328           L57:
+ 0328                   .dbline 410
+ 0328           ;   //Motor 2
+ 0328           ;   if(dM2==1)                   //hacia adelante M2
+ 0328 80910700          lds R24,_dM2#h
+ 032C 8130              cpi R24,1
+ 032E 11F4              brne L59
+ 0330           X24:
+ 0330                   .dbline 412
+ 0330           ;   {
+ 0330           ;      SET_RPWM2;
+ 0330                   .dbline 412
+ 0330 979A              sbi 0x12,7
+ 0332                   .dbline 413
+ 0332           ;      CLR_LPWM2;
+ 0332 C098              cbi 0x18,0
+ 0334                   .dbline 414
+ 0334           ;   }
+ 0334           L59:
+ 0334                   .dbline 415
+ 0334           ;   if(dM2==2)                   //hacia atras M2
+ 0334 80910700          lds R24,_dM2#h
+ 0338 8230              cpi R24,2
+ 033A 11F4              brne L61
+ 033C           X25:
+ 033C                   .dbline 417
+ 033C           ;   {
+ 033C           ;      CLR_RPWM2;
+ 033C                   .dbline 417
+ 033C 9798              cbi 0x12,7
+ 033E                   .dbline 418
+ 033E           ;      SET_LPWM2;
+ 033E C09A              sbi 0x18,0
+ 0340                   .dbline 419
+ 0340           ;   }
+ 0340           L61:
+ 0340                   .dbline -2
+ 0340           L54:
+ 0340                   .dbline 0 ; func end
+ 0340 8991              ld R24,y+
+ 0342 8FBF              OUT 63,R24
+ 0344 9991              ld R25,y+
+ 0346 8991              ld R24,y+
+ 0348 1895              reti
+ 034A                   .dbend
+                        .area vector(rom, abs)
+                        .org 18
+ 0012 00C0              rjmp _timer0_ovf_isr
+                        .area text(rom, con, rel)
+ 034A                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 034A                   .dbfunc e timer0_ovf_isr _timer0_ovf_isr#Fvv fV
+                        .even
+ 034A           _timer0_ovf_isr#Fvv::
+ 034A                   .dbline -1
+ 034A                   .dbline 426
+ 034A           ; }
+ 034A           ; 
+ 034A           ; 
+ 034A           ; //timer 0 overflow
+ 034A           ; #pragma interrupt_handler timer0_ovf_isr:10
+ 034A           ; void timer0_ovf_isr(void)
+ 034A           ; { }
+ 034A                   .dbline -2
+ 034A           L63:
+ 034A                   .dbline 0 ; func end
+ 034A 1895              reti
+ 034C                   .dbend
+                        .area vector(rom, abs)
+                        .org 20
+ 0014 00C0              rjmp _spi_stc_isr
+                        .area text(rom, con, rel)
+ 034C                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 034C                   .dbfunc e spi_stc_isr _spi_stc_isr#Fvv fV
+                        .even
+ 034C           _spi_stc_isr#Fvv::
+ 034C                   .dbline -1
+ 034C                   .dbline 430
+ 034C           ; //SPI completo
+ 034C           ; #pragma interrupt_handler spi_stc_isr:11
+ 034C           ; void spi_stc_isr(void)
+ 034C           ; { }
+ 034C                   .dbline -2
+ 034C           L64:
+ 034C                   .dbline 0 ; func end
+ 034C 1895              reti
+ 034E                   .dbend
+                        .area vector(rom, abs)
+                        .org 22
+ 0016 00C0              rjmp _uart0_rx_isr
+                        .area text(rom, con, rel)
+ 034E                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 034E                   .dbfunc e uart0_rx_isr _uart0_rx_isr#Fvv fV
+                        .even
+ 034E           _uart0_rx_isr#Fvv::
+ 034E                   .dbline -1
+ 034E                   .dbline 434
+ 034E           ; //UART byte recibido
+ 034E           ; #pragma interrupt_handler uart0_rx_isr:12
+ 034E           ; void uart0_rx_isr(void)
+ 034E           ; { }
+ 034E                   .dbline -2
+ 034E           L65:
+ 034E                   .dbline 0 ; func end
+ 034E 1895              reti
+ 0350                   .dbend
+                        .area vector(rom, abs)
+                        .org 24
+ 0018 00C0              rjmp _uart0_udre_isr
+                        .area text(rom, con, rel)
+ 0350                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0350                   .dbfunc e uart0_udre_isr _uart0_udre_isr#Fvv fV
+                        .even
+ 0350           _uart0_udre_isr#Fvv::
+ 0350                   .dbline -1
+ 0350                   .dbline 438
+ 0350           ; //UART registro de datos vacio
+ 0350           ; #pragma interrupt_handler uart0_udre_isr:13
+ 0350           ; void uart0_udre_isr(void)
+ 0350           ; { }
+ 0350                   .dbline -2
+ 0350           L66:
+ 0350                   .dbline 0 ; func end
+ 0350 1895              reti
+ 0352                   .dbend
+                        .area vector(rom, abs)
+                        .org 26
+ 001A 00C0              rjmp _uart0_tx_isr
+                        .area text(rom, con, rel)
+ 0352                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0352                   .dbfunc e uart0_tx_isr _uart0_tx_isr#Fvv fV
+                        .even
+ 0352           _uart0_tx_isr#Fvv::
+ 0352                   .dbline -1
+ 0352                   .dbline 442
+ 0352           ; //UART byte transmitido
+ 0352           ; #pragma interrupt_handler uart0_tx_isr:14
+ 0352           ; void uart0_tx_isr(void)
+ 0352           ; { }
+ 0352                   .dbline -2
+ 0352           L67:
+ 0352                   .dbline 0 ; func end
+ 0352 1895              reti
+ 0354                   .dbend
+                        .area vector(rom, abs)
+                        .org 28
+ 001C 00C0              rjmp _adc_isr
+                        .area text(rom, con, rel)
+ 0354                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0354                   .dbfunc e adc_isr _adc_isr#Fvv fV
+                        .even
+ 0354           _adc_isr#Fvv::
+ 0354                   .dbline -1
+ 0354                   .dbline 446
+ 0354           ; //ADC conversion completa
+ 0354           ; #pragma interrupt_handler adc_isr:15
+ 0354           ; void adc_isr(void)
+ 0354           ; { }
+ 0354                   .dbline -2
+ 0354           L68:
+ 0354                   .dbline 0 ; func end
+ 0354 1895              reti
+ 0356                   .dbend
+                        .area vector(rom, abs)
+                        .org 30
+ 001E 00C0              rjmp _eeprom_ready_isr
+                        .area text(rom, con, rel)
+ 0356                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0356                   .dbfunc e eeprom_ready_isr _eeprom_ready_isr#Fvv fV
+                        .even
+ 0356           _eeprom_ready_isr#Fvv::
+ 0356                   .dbline -1
+ 0356                   .dbline 450
+ 0356           ; //EEPROM listo
+ 0356           ; #pragma interrupt_handler eeprom_ready_isr:16
+ 0356           ; void eeprom_ready_isr(void)
+ 0356           ; { }
+ 0356                   .dbline -2
+ 0356           L69:
+ 0356                   .dbline 0 ; func end
+ 0356 1895              reti
+ 0358                   .dbend
+                        .area vector(rom, abs)
+                        .org 32
+ 0020 00C0              rjmp _ana_comp_isr
+                        .area text(rom, con, rel)
+ 0358                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0358                   .dbfunc e ana_comp_isr _ana_comp_isr#Fvv fV
+                        .even
+ 0358           _ana_comp_isr#Fvv::
+ 0358                   .dbline -1
+ 0358                   .dbline 454
+ 0358           ; //comparador analogico
+ 0358           ; #pragma interrupt_handler ana_comp_isr:17
+ 0358           ; void ana_comp_isr(void)
+ 0358           ; { }
+ 0358                   .dbline -2
+ 0358           L70:
+ 0358                   .dbline 0 ; func end
+ 0358 1895              reti
+ 035A                   .dbend
+                        .area vector(rom, abs)
+                        .org 34
+ 0022 00C0              rjmp _twi_isr
+                        .area text(rom, con, rel)
+ 035A                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 035A                   .dbfunc e twi_isr _twi_isr#Fvv fV
+                        .even
+ 035A           _twi_isr#Fvv::
+ 035A                   .dbline -1
+ 035A                   .dbline 458
+ 035A           ; //twi completo
+ 035A           ; #pragma interrupt_handler twi_isr:18
+ 035A           ; void twi_isr(void)
+ 035A           ; { }
+ 035A                   .dbline -2
+ 035A           L71:
+ 035A                   .dbline 0 ; func end
+ 035A 1895              reti
+ 035C                   .dbend
+                        .area vector(rom, abs)
+                        .org 36
+ 0024 00C0              rjmp _spm_rdy_isr
+                        .area text(rom, con, rel)
+ 035C                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 035C                   .dbfunc e spm_rdy_isr _spm_rdy_isr#Fvv fV
+                        .even
+ 035C           _spm_rdy_isr#Fvv::
+ 035C                   .dbline -1
+ 035C                   .dbline 462
+ 035C           ; //FLASH guardado listo
+ 035C           ; #pragma interrupt_handler spm_rdy_isr:19
+ 035C           ; void spm_rdy_isr(void)
+ 035C           ; { }
+ 035C                   .dbline -2
+ 035C           L72:
+ 035C                   .dbline 0 ; func end
+ 035C 1895              reti
+ 035E                   .dbend
+                        .area bss(ram, con, rel)
+ 0000                   .dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+ 0000           _DatoSPI#t::
+ 0000                   .blkb 2
+ 0002                   .dbsym e DatoSPI _DatoSPI#t s

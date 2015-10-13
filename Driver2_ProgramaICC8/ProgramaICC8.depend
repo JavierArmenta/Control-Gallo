@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1439490458 source:d:\robotica\proyectos\driver 2 motores\programaicc8\main.c
+	<iom8v.h>
+	<macros.h>
+	<math.h>
+	<stdint.h>
+	<stdlib.h>
+	<string.h>
+	<stdbool.h>
+	<stdio.h>
+	<ctype.h>
+	<stdarg.h>
+

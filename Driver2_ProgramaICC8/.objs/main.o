@@ -1,0 +1,553 @@
+XL
+H 5 areas 38 global symbols
+M main.c
+S _spi_stc_isr Ref0000
+S _uart0_udre_isr Ref0000
+S _timer0_ovf_isr Ref0000
+S _eeprom_ready_isr Ref0000
+S _timer1_ovf_isr Ref0000
+S _timer2_ovf_isr Ref0000
+S _spm_rdy_isr Ref0000
+S push_xgsetF000 Ref0000
+S _adc_isr Ref0000
+S _uart0_rx_isr Ref0000
+S _uart0_tx_isr Ref0000
+S _ana_comp_isr Ref0000
+S _twi_isr Ref0000
+S _timer1_capt_isr Ref0000
+S _timer2_comp_isr Ref0000
+S _int0_isr Ref0000
+S _int1_isr Ref0000
+S push_arg4 Ref0000
+S empy32s Ref0000
+S pop_xgsetF000 Ref0000
+S _timer1_compa_isr Ref0000
+S _timer1_compb_isr Ref0000
+A text size 35E flags 0
+dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+dbfunc e main 0 fV
+dbline FFFFFFFF 0
+dbline 65 0
+dbline 66 0
+dbline 67 2
+dbline 68 4
+dbline 70 8
+dbline 71 8
+dbline 73 12
+dbline 73 12
+dbline 75 14
+dbline 7C 1C
+dbline 7C 1C
+dbline 7D 26
+dbline 7E 32
+dbline 80 34
+dbline 81 34
+dbline 84 62
+dbline 85 76
+dbline 87 86
+dbline 87 86
+dbline 88 9A
+dbline 89 9C
+dbline 8A A8
+dbline 90 AC
+dbline 91 AC
+dbline 93 BC
+dbline 93 BC
+dbline 94 D0
+dbline 95 DC
+dbline 96 DC
+dbline 98 EC
+dbline 98 EC
+dbline 99 108
+dbline 9A 114
+dbline 9B 114
+dbline 9D 124
+dbline 9D 124
+dbline 9E 138
+dbline 9F 144
+dbline A0 144
+dbline BC 146
+dbline BC 14C
+dbline BE 14C
+dbline C2 14C
+dbline C3 14C
+dbline C6 14E
+dbline 6F 14E
+dbline FFFFFFFE 150
+dbline 0 150
+dbfunc e Config 152 fV
+dbline FFFFFFFF 152
+dbline CB 152
+dbline CC 152
+dbline D6 154
+dbline D7 158
+dbline E0 15C
+dbline E1 160
+dbline EB 164
+dbline EC 166
+dbline EF 16A
+dbline F3 16E
+dbline F4 170
+dbline 100 174
+dbline 103 17C
+dbline 104 180
+dbline FFFFFFFE 182
+dbline 0 182
+dbfunc e ActualizaVel 184 fV
+dbline FFFFFFFF 184
+dbline 109 184
+dbline 10B 184
+dbline 10D 194
+dbline 10D 194
+dbline 10F 19E
+dbline 10F 19E
+dbline 110 1AE
+dbline 111 1B4
+dbline 113 1B6
+dbline 114 1B6
+dbline 115 1BC
+dbline 116 1BC
+dbline 117 1CC
+dbline 119 1CE
+dbline 11A 1CE
+dbline 11B 1D4
+dbline 11C 1D6
+dbline 11D 1D8
+dbline 11F 1D8
+dbline 121 1E8
+dbline 121 1E8
+dbline 123 1F2
+dbline 123 1F2
+dbline 124 202
+dbline 125 208
+dbline 127 20A
+dbline 128 20A
+dbline 129 210
+dbline 12A 210
+dbline 12B 220
+dbline 12D 222
+dbline 12E 222
+dbline 12F 228
+dbline 130 22A
+dbline 131 22C
+dbline FFFFFFFE 22C
+dbline 0 22C
+dbfunc e ADCCH 22E fS
+dbsym r ADCres A I
+dbsym r ch 10 c
+dbline FFFFFFFF 232
+dbline 136 232
+dbline 138 232
+dbline 139 238
+dbline 13B 23C
+dbline 13B 23C
+dbline 13B 23C
+dbline 13C 244
+dbline 13D 248
+dbline FFFFFFFE 24A
+dbline 0 24A
+dbfunc e SPI_SlaveTransfer 250 fc
+dbsym l llamada 0 c
+dbsym r Dato 10 c
+dbline FFFFFFFF 254
+dbline 142 254
+dbline 144 254
+dbline 14D 256
+dbline 151 25A
+dbline 151 25A
+dbline 151 25A
+dbline 151 262
+dbline 15A 262
+dbline 15B 264
+dbline FFFFFFFE 264
+dbline 0 264
+dbfunc e delayms 268 fV
+dbsym l j 0 L
+dbsym l msec 8 L
+dbline FFFFFFFF 26E
+dbline 160 26E
+dbline 162 26E
+dbline 162 27A
+dbline 162 27A
+dbline 162 29A
+dbline FFFFFFFE 2CA
+dbline 0 2CA
+dbfunc e int0_isr 2D2 fV
+dbline FFFFFFFF 2D2
+dbline 16A 2D2
+dbline FFFFFFFE 2D2
+dbline 0 2D2
+dbfunc e int1_isr 2D4 fV
+dbline FFFFFFFF 2D4
+dbline 16E 2D4
+dbline FFFFFFFE 2D4
+dbline 0 2D4
+dbfunc e timer2_comp_isr 2D6 fV
+dbline FFFFFFFF 2D6
+dbline 172 2D6
+dbline FFFFFFFE 2D6
+dbline 0 2D6
+dbfunc e timer2_ovf_isr 2D8 fV
+dbline FFFFFFFF 2D8
+dbline 176 2D8
+dbline FFFFFFFE 2D8
+dbline 0 2D8
+dbfunc e timer1_capt_isr 2DA fV
+dbline FFFFFFFF 2DA
+dbline 17A 2DA
+dbline FFFFFFFE 2DA
+dbline 0 2DA
+dbfunc e timer1_compa_isr 2DC fV
+dbline FFFFFFFF 2E2
+dbline 17E 2E2
+dbline 17F 2E2
+dbline 180 2E4
+dbline FFFFFFFE 2E6
+dbline 0 2E6
+dbfunc e timer1_compb_isr 2EE fV
+dbline FFFFFFFF 2F4
+dbline 185 2F4
+dbline 186 2F4
+dbline 187 2F6
+dbline FFFFFFFE 2F8
+dbline 0 2F8
+dbfunc e timer1_ovf_isr 300 fV
+dbline FFFFFFFF 308
+dbline 18C 308
+dbline 18D 308
+dbline 18F 310
+dbline 191 318
+dbline 191 318
+dbline 192 31A
+dbline 193 31C
+dbline 194 31C
+dbline 196 324
+dbline 196 324
+dbline 197 326
+dbline 198 328
+dbline 19A 328
+dbline 19C 330
+dbline 19C 330
+dbline 19D 332
+dbline 19E 334
+dbline 19F 334
+dbline 1A1 33C
+dbline 1A1 33C
+dbline 1A2 33E
+dbline 1A3 340
+dbline FFFFFFFE 340
+dbline 0 340
+dbfunc e timer0_ovf_isr 34A fV
+dbline FFFFFFFF 34A
+dbline 1AA 34A
+dbline FFFFFFFE 34A
+dbline 0 34A
+dbfunc e spi_stc_isr 34C fV
+dbline FFFFFFFF 34C
+dbline 1AE 34C
+dbline FFFFFFFE 34C
+dbline 0 34C
+dbfunc e uart0_rx_isr 34E fV
+dbline FFFFFFFF 34E
+dbline 1B2 34E
+dbline FFFFFFFE 34E
+dbline 0 34E
+dbfunc e uart0_udre_isr 350 fV
+dbline FFFFFFFF 350
+dbline 1B6 350
+dbline FFFFFFFE 350
+dbline 0 350
+dbfunc e uart0_tx_isr 352 fV
+dbline FFFFFFFF 352
+dbline 1BA 352
+dbline FFFFFFFE 352
+dbline 0 352
+dbfunc e adc_isr 354 fV
+dbline FFFFFFFF 354
+dbline 1BE 354
+dbline FFFFFFFE 354
+dbline 0 354
+dbfunc e eeprom_ready_isr 356 fV
+dbline FFFFFFFF 356
+dbline 1C2 356
+dbline FFFFFFFE 356
+dbline 0 356
+dbfunc e ana_comp_isr 358 fV
+dbline FFFFFFFF 358
+dbline 1C6 358
+dbline FFFFFFFE 358
+dbline 0 358
+dbfunc e twi_isr 35A fV
+dbline FFFFFFFF 35A
+dbline 1CA 35A
+dbline FFFFFFFE 35A
+dbline 0 35A
+dbfunc e spm_rdy_isr 35C fV
+dbline FFFFFFFF 35C
+dbline 1CE 35C
+dbline FFFFFFFE 35C
+dbline 0 35C
+S _Config#Fvv Def0152
+S _timer1_compa_isr#Fvv Def02DC
+S _timer1_compb_isr#Fvv Def02EE
+S _spi_stc_isr#Fvv Def034C
+S _main#Fvv Def0000
+S _uart0_udre_isr#Fvv Def0350
+S _timer0_ovf_isr#Fvv Def034A
+S _eeprom_ready_isr#Fvv Def0356
+S _timer1_ovf_isr#Fvv Def0300
+S _timer2_ovf_isr#Fvv Def02D8
+S _spm_rdy_isr#Fvv Def035C
+S _ActualizaVel#Fvv Def0184
+S _SPI_SlaveTransfer#Fhhc Def0250
+S _adc_isr#Fvv Def0354
+S _uart0_rx_isr#Fvv Def034E
+S _uart0_tx_isr#Fvv Def0352
+S _delayms#Fvl Def0268
+S _ana_comp_isr#Fvv Def0358
+S _twi_isr#Fvv Def035A
+S _timer1_capt_isr#Fvv Def02DA
+S _timer2_comp_isr#Fvv Def02D6
+S _int0_isr#Fvv Def02D2
+S _int1_isr#Fvv Def02D4
+S _ADCCH#Fsc Def022E
+A data size 10 flags 20
+dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+dbsym e i 0 S
+dbsym e VM1 2 S
+dbsym e VM2 4 S
+dbsym e dM1 6 c
+dbsym e dM2 7 c
+dbsym e L 8 L
+dbsym e Esclavo_ID C c
+dbsym e Haciendo D c
+dbsym e idx E s
+S _Haciendo#c Def000D
+S _L#l Def0008
+S _idx#t Def000E
+S _i#s Def0000
+S _Esclavo_ID#h Def000C
+S _VM1#s Def0002
+S _VM2#s Def0004
+S _dM1#h Def0006
+S _dM2#h Def0007
+A idata size 10 flags 0
+A vector size 26 flags C
+A bss size 2 flags 20
+dbfile D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+dbsym e DatoSPI 0 s
+S _DatoSPI#t Def0000
+T 00 00 00 00
+R 00 00 02 00
+T 02 00 00 00
+R 00 00 02 00
+T 04 00 00 00
+R 00 00 02 00
+T 06 00 00
+R 00 00 02 00
+T 07 00 00
+R 00 00 02 00
+T 08 00 00 00 00 00
+R 00 00 02 00
+T 0C 00 01
+R 00 00 02 00
+T 0D 00 00
+R 00 00 02 00
+T 0E 00 00 00
+R 00 00 02 00
+T 00 00 A8 D0 96 9A C1 9A A3 C0 83 B3 84 70 84 30
+R 00 00 00 00
+T 0E 00 09 F4 9D C0 AB 9A 20 90 0D 00 22 20 61 F4
+R 00 00 00 00 00 0A 01 00
+T 1C 00 22 27 01 E0 17 D1 00 93 0D 00 22 24 33 24
+R 00 00 00 00 00 0A 01 00
+T 2A 00 30 92 0F 00 20 92 0E 00 8C C0 40 91 0D 00
+R 00 00 00 00 00 04 01 00 00 08 01 00 00 0E 01 00
+T 38 00 55 27 40 35 E0 E0 5E 07 09 F4 84 C0 42 35
+R 00 00 00 00
+T 46 00 E0 E0 5E 07 09 F4 7F C0 43 35 E0 E0 5E 07
+R 00 00 00 00
+T 54 00 09 F4 7A C0 46 35 E0 E0 5E 07 09 F0 72 C0
+R 00 00 00 00
+T 62 00 22 27 00 91 0D 00 F3 D0 20 2E 33 24 30 92
+R 00 00 00 00 00 06 01 00
+T 70 00 01 00 20 92 00 00 80 91 0E 00 90 91
+R 00 00 00 00 00 02 04 00 00 06 04 00 00 0A 01 00
+T 7C 00 0F 00 83 30 E0 E0 9E 07 99 F4 40 90 04 00
+R 00 00 00 00 00 02 01 00 00 0E 01 00
+T 8A 00 50 90 05 00 42 0C 53 1C 50 92 05 00 40 92
+R 00 00 00 00 00 04 01 00 00 0C 01 00
+T 98 00 04 00 74 D0 22 24 33 24 30 92 0F 00 20 92
+R 00 00 00 00 00 02 01 00 00 0C 01 00
+T A6 00 0E 00 20 92 0D 00 80 91 0E 00 90 91
+R 00 00 00 00 00 02 01 00 00 06 01 00 00 0A 01 00
+T B2 00 0F 00 82 30 E0 E0 9E 07 81 F4 20 90 00 00
+R 00 00 00 00 00 02 01 00 00 0E 04 00
+T C0 00 30 90 01 00 32 2C 22 24 30 92 05 00 20 92
+R 00 00 00 00 00 04 04 00 00 0C 01 00
+T CE 00 04 00 83 E0 90 E0 90 93 0F 00 80 93 0E 00
+R 00 00 00 00 00 02 01 00 00 0A 01 00 00 0E 01 00
+T DC 00 80 91 0E 00 90 91 0F 00 81 30 E0 E0 9E 07
+R 00 00 00 00 00 04 01 00 00 08 01 00
+T EA 00 A1 F4 20 90 00 00 30 90 01 00 40 90 02 00
+R 00 00 00 00 00 06 04 00 00 0A 04 00 00 0E 01 00
+T F8 00 50 90 03 00 42 0C 53 1C 50 92 03 00 40 92
+R 00 00 00 00 00 04 01 00 00 0C 01 00
+T 06 01 02 00 82 E0 90 E0 90 93 0F 00 80 93 0E 00
+R 00 00 00 00 00 02 01 00 00 0A 01 00 00 0E 01 00
+T 14 01 20 90 0E 00 30 90 0F 00 22 20 B1 F4 33 20
+R 00 00 00 00 00 04 01 00 00 08 01 00
+T 22 01 A1 F4 20 90 00 00 30 90 01 00 32 2C 22 24
+R 00 00 00 00 00 06 04 00 00 0A 04 00
+T 30 01 30 92 03 00 20 92 02 00 81 E0 90 E0 90 93
+R 00 00 00 00 00 04 01 00 00 08 01 00
+T 3E 01 0F 00 80 93 0E 00 03 C0 22 24 20 92 0D 00
+R 00 00 00 00 00 02 01 00 00 06 01 00 00 0E 01 00
+T 4C 01 AB 98 5C CF 08 95
+R 00 00 00 00
+T 52 01 F8 94 84 E0 88 BB 83 E1 87 BB 22 24 22 BA
+R 00 00 00 00
+T 60 01 88 E0 84 BB 22 BA 82 EF 81 BB 80 E4 8D B9
+R 00 00 00 00
+T 6E 01 2F BC 81 E0 8E BD 80 E0 90 EF 9D BD 8C BD
+R 00 00 00 00
+T 7C 01 8C E1 89 BF 78 94 08 95
+R 00 00 00 00
+T 84 01 20 90 02 00 30 90 03 00 22 20 11 F4 33 20
+R 00 00 00 00 00 04 01 00 00 08 01 00
+T 92 01 E9 F0 C1 01 80 30 E0 E0 9E 07 64 F4 80 95
+R 00 00 00 00
+T A0 01 90 95 8F 5F 9F 4F 90 93 03 00 80 93 02 00
+R 00 00 00 00 00 0A 01 00 00 0E 01 00
+T AE 01 82 E0 80 93 06 00 03 C0 81 E0 80 93 06 00
+R 00 00 00 00 00 06 01 00 00 0E 01 00
+T BC 01 80 91 02 00 90 91 03 00 80 50 90 41 9B BD
+R 00 00 00 00 00 04 01 00 00 08 01 00
+T CA 01 8A BD 05 C0 22 24 20 92 06 00 95 98 94 98
+R 00 00 00 00 00 0A 01 00
+T D8 01 20 90 04 00 30 90 05 00 22 20 11 F4 33 20
+R 00 00 00 00 00 04 01 00 00 08 01 00
+T E6 01 E9 F0 C1 01 80 30 E0 E0 9E 07 64 F4 80 95
+R 00 00 00 00
+T F4 01 90 95 8F 5F 9F 4F 90 93 05 00 80 93 04 00
+R 00 00 00 00 00 0A 01 00 00 0E 01 00
+T 02 02 82 E0 80 93 07 00 03 C0 81 E0 80 93 07 00
+R 00 00 00 00 00 06 01 00 00 0E 01 00
+T 10 02 80 91 04 00 90 91 05 00 80 50 90 41 99 BD
+R 00 00 00 00 00 04 01 00 00 08 01 00
+T 1E 02 88 BD 05 C0 22 24 20 92 07 00 C0 98 97 98
+R 00 00 00 00 00 0A 01 00
+T 2C 02 08 95
+R 00 00 00 00
+T 2E 02 AA 92 BA 92 80 2F 80 64 87 B9 87 ED 86 B9
+R 00 00 00 00
+T 3C 02 86 B1 80 71 80 31 E1 F7 A4 B0 B5 B0 85 01
+R 00 00 00 00
+T 4A 02 B9 90 A9 90 08 95
+R 00 00 00 00
+T 50 02 3A 93 2A 93 0F B9 80 E8 8E B9 8E B1 80 78
+R 00 00 00 00
+T 5E 02 80 38 E1 F7 0F B1 22 96 08 95
+R 00 00 00 00
+T 68 02 00 D0 00 D0 24 97 80 E0 88 83 89 83 8A 83
+R 00 00 00 00 82 02 11 00 82 04 07 00
+T 76 02 8B 83 10 C0 41 E0 50 E0 60 E0 70 E0 28 80
+R 00 00 00 00
+T 84 02 39 80 4A 80 5B 80 24 0E 35 1E 46 1E 57 1E
+R 00 00 00 00
+T 92 02 28 82 39 82 4A 82 5B 82 28 84 39 84 4A 84
+R 00 00 00 00
+T A0 02 5B 84 4D E4 50 E0 60 E0 70 E0 5A 92 4A 92
+R 00 00 00 00
+T AE 02 3A 92 2A 92 8A 01 9B 01 00 D0 28 80 39 80
+R 00 00 00 00 82 0A 12 00
+T BC 02 4A 80 5B 80 20 16 31 06 42 06 53 06 C4 F2
+R 00 00 00 00
+T CA 02 24 96 00 D0 24 96 08 95
+R 00 00 00 00 82 04 13 00
+T 02 00 00 C0
+R 00 00 03 00 82 02 0F 00
+T D2 02 18 95
+R 00 00 00 00
+T 04 00 00 C0
+R 00 00 03 00 82 02 10 00
+T D4 02 18 95
+R 00 00 00 00
+T 06 00 00 C0
+R 00 00 03 00 82 02 0E 00
+T D6 02 18 95
+R 00 00 00 00
+T 08 00 00 C0
+R 00 00 03 00 82 02 05 00
+T D8 02 18 95
+R 00 00 00 00
+T 0A 00 00 C0
+R 00 00 03 00 82 02 0D 00
+T DA 02 18 95
+R 00 00 00 00
+T 0C 00 00 C0
+R 00 00 03 00 82 02 14 00
+T DC 02 0A 92 0F B6 0A 92 95 98 94 98 09 90 0F BE
+R 00 00 00 00
+T EA 02 09 90 18 95
+R 00 00 00 00
+T 0E 00 00 C0
+R 00 00 03 00 82 02 15 00
+T EE 02 0A 92 0F B6 0A 92 C0 98 97 98 09 90 0F BE
+R 00 00 00 00
+T FC 02 09 90 18 95
+R 00 00 00 00
+T 10 00 00 C0
+R 00 00 03 00 82 02 04 00
+T 00 03 8A 93 9A 93 8F B7 8A 93 80 E0 90 EF 9D BD
+R 00 00 00 00
+T 0E 03 8C BD 80 91 06 00 81 30 11 F4 94 9A 95 98
+R 00 00 00 00 00 06 01 00
+T 1C 03 80 91 06 00 82 30 11 F4 94 98 95 9A 80 91
+R 00 00 00 00 00 04 01 00
+T 2A 03 07 00 81 30 11 F4 97 9A C0 98 80 91 07 00
+R 00 00 00 00 00 02 01 00 00 0E 01 00
+T 38 03 82 30 11 F4 97 98 C0 9A 89 91 8F BF 99 91
+R 00 00 00 00
+T 46 03 89 91 18 95
+R 00 00 00 00
+T 12 00 00 C0
+R 00 00 03 00 82 02 02 00
+T 4A 03 18 95
+R 00 00 00 00
+T 14 00 00 C0
+R 00 00 03 00 82 02 00 00
+T 4C 03 18 95
+R 00 00 00 00
+T 16 00 00 C0
+R 00 00 03 00 82 02 09 00
+T 4E 03 18 95
+R 00 00 00 00
+T 18 00 00 C0
+R 00 00 03 00 82 02 01 00
+T 50 03 18 95
+R 00 00 00 00
+T 1A 00 00 C0
+R 00 00 03 00 82 02 0A 00
+T 52 03 18 95
+R 00 00 00 00
+T 1C 00 00 C0
+R 00 00 03 00 82 02 08 00
+T 54 03 18 95
+R 00 00 00 00
+T 1E 00 00 C0
+R 00 00 03 00 82 02 03 00
+T 56 03 18 95
+R 00 00 00 00
+T 20 00 00 C0
+R 00 00 03 00 82 02 0B 00
+T 58 03 18 95
+R 00 00 00 00
+T 22 00 00 C0
+R 00 00 03 00 82 02 0C 00
+T 5A 03 18 95
+R 00 00 00 00
+T 24 00 00 C0
+R 00 00 03 00 82 02 06 00
+T 5C 03 18 95
+R 00 00 00 00

@@ -1,0 +1,879 @@
+Interrupt Vectors
+00000 C01A      RJMP	__start|__text_start
+00001 C1A4      RJMP	_int0_isr          
+00002 C1A4      RJMP	_int1_isr          
+00003 C1A4      RJMP	_timer2_comp_isr   
+00004 C1A4      RJMP	_timer2_ovf_isr    
+00005 C1A4      RJMP	_timer1_capt_isr   
+00006 C1A4      RJMP	_timer1_compa_isr  
+00007 C1AC      RJMP	_timer1_compb_isr  
+00008 C1B4      RJMP	_timer1_ovf_isr    
+00009 C1D8      RJMP	_timer0_ovf_isr    
+0000A C1D8      RJMP	_spi_stc_isr       
+0000B C1D8      RJMP	_uart0_rx_isr      
+0000C C1D8      RJMP	_uart0_udre_isr    
+0000D C1D8      RJMP	_uart0_tx_isr      
+0000E C1D8      RJMP	_adc_isr           
+0000F C1D8      RJMP	_eeprom_ready_isr  
+00010 C1D8      RJMP	_ana_comp_isr      
+00011 C1D8      RJMP	_twi_isr           
+00012 C1D8      RJMP	_spm_rdy_isr       
+Program Code (text area)
+FILE: D:\ROBOTICA\PROYEC~1\DRIVER~2\PROGRA~2\main.c
+(0001) //!Programa del sistema de control de los 2 motores ppales del gallo UAA
+(0002) // Elaboro Dr. Luis Antonio Raygoza Pérez
+(0003) // Fuse bits: high = 1101 1001 = D9
+(0004) //			  low  = 1110 1111 = EF
+(0005) 
+(0006) #include <iom8v.h>
+(0007) #include <macros.h>
+(0008) #include <math.h>
+(0009) #include <stdint.h>
+(0010) #include <stdlib.h>
+(0011) #include <string.h>
+(0012) #include <stdbool.h>
+(0013) #include <stdio.h>
+(0014) #include <ctype.h>
+(0015) #include <stdarg.h>
+(0016) 
+(0017) //!---------------------------- CONEXIONES -------------------------------------------------
+(0018) //                       ---------------\/---------------
+(0019) //			RESET SPI  =|PC6(in)	      PC5(?) 	     |= SCL I2C
+(0020) //			RX UART    =|PD0(in)	      PC4(?)		 |= SDA I2C
+(0021) //			TX UART    =|PD1(out)	      PC3(out) 		 |= Led verde ?
+(0022) //			Encoder M2 =|PD2(in INT0)     PC2(in) 		 |= Error o sobrecorriente drivers M1 y M2
+(0023) //			Encoder M1 =|PD3(in INT1)     PC1(in ADC) 	 |= Corriente IM2
+(0024) //			RPWM M1    =|PD4(out) 	      PC0(in ADC) 	 |= Corriente IM1
+(0025) //			5v         =|VCC              GND	 		 |= GND
+(0026) //			GND        =|GND              AREF	 		 |= 5V
+(0027) //			XTAL 16Mhz =|PB6(in)	      AVCC	 		 |= 5V
+(0028) //			XTAL 16Mhz =|PB7(in)	      PB5(in)		 |= SCK  SPI
+(0029) //			LPWM M1    =|PD5(out)	      PB4(out)		 |= MISO SPI
+(0030) //			Enable M1  =|PD6(out)	      PB3(in)	   	 |= MOSI SPI
+(0031) //			RPWM M2    =|PD7(out)	      PB2(in pull up)|= SS   SPI
+(0032) //			LPWM M2    =|PB0(out) 	      PB1(out) 	   	 |= Enable M2
+(0033) //				 	     --------------------------------
+(0034) 
+(0035) //!---------------------------- DEFINICIONES ------------------------------------------
+(0036) // ***** Declaracion de pines de control ***** //
+(0037) #define LPWM1 (1 << 5)	//PD5	(salida)		   LPWM M1
+(0038) #define RPWM1 (1 << 4)	//PD4	(salida) 		   RPWM M1
+(0039) #define EN_M1 (1 << 6)	//PD6	(salida)		   Enable M1
+(0040) #define LPWM2 (1 << 0)	//PB0	(salida) 		   LPWM M2
+(0041) #define RPWM2 (1 << 7)	//PD7	(salida)		   RPWM M2
+(0042) #define EN_M2 (1 << 1)	//PB1	(salida) 	   	   Enable M2
+(0043) #define LEDV  (1 << 3)	//PC3	(salida) 		   Led verde ?
+(0044) 
+(0045) #define IM1   (1 << 0)  //PC0	(entrada ADC) 	   Corriente IM1
+(0046) #define IM2   (1 << 1)  //PC1	(entrada ADC) 	   Corriente IM2
+(0047) #define ERROR (1 << 2)  //PC2	(entrada) 		   Error o sobrecorriente drivers M1 y M2
+(0048) #define ENCM2 (1 << 2)  //PD2	(entrada INT0)	   Encoder M2
+(0049) #define ENCM1 (1 << 3)  //PD3	(entrada INT1)	   Encoder M1
+(0050) 
+(0051) #define SSSPI   (1 << 2)  //PB2	(entrada pull up)  SS   SPI
+(0052) #define MOSISPI (1 << 3)  //PB3	(entrada)	   	   MOSI SPI
+(0053) #define MISOSPI (1 << 4)  //PB4	(salida)		   MISO SPI
+(0054) #define SCKSPI  (1 << 5)  //PB5	(entrada)		   SCK  SPI
+(0055) #define SDAI2C  (1 << 4)  //PC4	(?)				   SDA I2C
+(0056) #define SCLI2C  (1 << 5)  //PC5	(?)				   SCL I2C
+(0057) #define RXUART  (1 << 0)  //PD0	(entrada)		   RX UART
+(0058) #define TXUART  (1 << 1)  //PD1	(salida)		   TX UART
+(0059) 
+(0060) // ***** Declaracion de macros de control ***** //
+(0061) //SALIDAS
+(0062) #define SET_LPWM1	 	PORTD |=  LPWM1		  //prender LPWM1
+(0063) #define CLR_LPWM1	 	PORTD &= ~LPWM1		  //apagar  LPWM1
+(0064) #define SET_RPWM1	 	PORTD |=  RPWM1		  //prender RPWM1
+(0065) #define CLR_RPWM1	 	PORTD &= ~RPWM1		  //apagar  RPWM1
+(0066) #define SET_EN_M1	 	PORTD |=  EN_M1		  //prender EN_M1
+(0067) #define CLR_EN_M1	 	PORTD &= ~EN_M1		  //apagar  EN_M1
+(0068) #define SET_LPWM2	 	PORTB |=  LPWM2		  //prender LPWM2
+(0069) #define CLR_LPWM2	 	PORTB &= ~LPWM2		  //apagar  LPWM2
+(0070) #define SET_RPWM2	 	PORTD |=  RPWM2		  //prender RPWM2
+(0071) #define CLR_RPWM2	 	PORTD &= ~RPWM2		  //apagar  RPWM2
+(0072) #define SET_EN_M2	 	PORTB |=  EN_M2		  //prender EN_M2
+(0073) #define CLR_EN_M2	 	PORTB &= ~EN_M2		  //apagar  EN_M2
+(0074) #define SET_LEDV	 	PORTC |=  LEDV		  //prender LEDV
+(0075) #define CLR_LEDV	 	PORTC &= ~LEDV		  //apagar  LEDV
+(0076) //ENTRADAS
+(0077) #define IF_ERROR		(PINC&ERROR)==ERROR
+(0078) #define NO_ERROR		(PINC&ERROR)!=ERROR
+(0079) 
+(0080) 
+(0081) //!---------------------------- DECLARACION DE VARIABLES GLOBALES ---------------------
+(0082) int16_t  i=0;					    //contador
+(0083) int16_t  VM1=0;		                //velocidad del motor 1
+(0084) int16_t  VM2=0;		                //velocidad del motor 2
+(0085) uint8_t  dM1=0;                     //direccion del motor 1
+(0086) uint8_t  dM2=0;                     //direccion del motor 2
+(0087) long     L=0;				   	    //temporizacion
+(0088) uint8_t  Esclavo_ID=1;
+(0089) char     Haciendo=0;                //parte del ciclo que se encuentra haciendo con el Master
+(0090) uint16_t idx=0,DatoSPI;             //numero de byte para transmision o recepcion y aux de dato recibido
+(0091) 
+(0092) //!---------------------------- DECLARACION DE FUNCIONES DE USUARIO -------------------
+(0093) void     Config(void);			    //configuracion inicial de perifericos
+(0094) int16_t  ADCCH(char ch); 		    //realizar una conversion en el canal ch
+(0095) void     ActualizaVel(void); 		//actualizar la velocidad de los motores
+(0096) uint8_t  SPI_SlaveTransfer(uint8_t Dato, char llamada);
+(0097) void     delayms(long msec);		    //rutina de retardos
+(0098) 
+(0099) //!---------------------------- PROGRAMA PRINCIPAL ------------------------------------
+(0100) void main(void)
+(0101) {
+(0102)     Config();
+_main:
+    0003D D0A8      RCALL	_Config
+(0103)     SET_EN_M1;
+    0003E 9A96      SBI	0x12,6
+(0104)     SET_EN_M2;
+    0003F 9AC1      SBI	0x18,1
+    00040 C0A3      RJMP	0x00E4
+(0105) 
+(0106)     //VM1=-2047;
+(0107)     //VM2=-4095;
+(0108)     //ActualizaVel();
+(0109) 
+(0110) 
+(0111)     while (1)
+(0112)     {
+(0113)         if(NO_ERROR)
+    00041 B383      IN	R24,0x13
+    00042 7084      ANDI	R24,4
+    00043 3084      CPI	R24,4
+    00044 F409      BNE	0x0046
+    00045 C09D      RJMP	0x00E3
+(0114)         {
+(0115)             SET_LEDV;
+    00046 9AAB      SBI	0x15,3
+(0116) 
+(0117)             if(Haciendo==0)
+    00047 9020 006D LDS	R2,Haciendo
+    00049 2022      TST	R2
+    0004A F461      BNE	0x0057
+(0118)             {
+(0119)                 //Esperar comando del maestro
+(0120)                 //'V':   //Adquirir velocidad de ambos motores
+(0121)                 //'P':   //Adquirir posicion de lazo cerrado de ambos motores
+(0122)                 //'S':   //El maestro va a actualizar los parametros del PID
+(0123)                 //'R':   //El maestro va a leer los parametros del PID
+(0124)                 Haciendo=SPI_SlaveTransfer(1,0); //Esperar comando del Master
+    0004B 2722      CLR	R18
+    0004C E001      LDI	R16,1
+    0004D D117      RCALL	_SPI_SlaveTransfer
+    0004E 9300 006D STS	Haciendo,R16
+(0125)                 idx=0;
+    00050 2422      CLR	R2
+    00051 2433      CLR	R3
+    00052 9230 006F STS	idx+1,R3
+    00054 9220 006E STS	idx,R2
+(0126)             }
+    00056 C08C      RJMP	0x00E3
+(0127)             else
+(0128)             {
+(0129)                 switch(Haciendo)
+    00057 9140 006D LDS	R20,Haciendo
+    00059 2755      CLR	R21
+    0005A 3540      CPI	R20,0x50
+    0005B E0E0      LDI	R30,0
+    0005C 075E      CPC	R21,R30
+    0005D F409      BNE	0x005F
+    0005E C084      RJMP	0x00E3
+    0005F 3542      CPI	R20,0x52
+    00060 E0E0      LDI	R30,0
+    00061 075E      CPC	R21,R30
+    00062 F409      BNE	0x0064
+    00063 C07F      RJMP	0x00E3
+    00064 3543      CPI	R20,0x53
+    00065 E0E0      LDI	R30,0
+    00066 075E      CPC	R21,R30
+    00067 F409      BNE	0x0069
+    00068 C07A      RJMP	0x00E3
+    00069 3546      CPI	R20,0x56
+    0006A E0E0      LDI	R30,0
+    0006B 075E      CPC	R21,R30
+    0006C F009      BEQ	0x006E
+    0006D C072      RJMP	0x00E0
+(0130)                 {
+(0131)                     case 'V':   //Adquirir velocidad de ambos motores
+(0132)                             DatoSPI = SPI_SlaveTransfer(Haciendo,0);
+    0006E 2722      CLR	R18
+    0006F 9100 006D LDS	R16,Haciendo
+    00071 D0F3      RCALL	_SPI_SlaveTransfer
+    00072 2E20      MOV	R2,R16
+    00073 2433      CLR	R3
+    00074 9230 0071 STS	DatoSPI+1,R3
+    00076 9220 0070 STS	DatoSPI,R2
+(0133)                             if(idx==3)
+    00078 9180 006E LDS	R24,idx
+    0007A 9190 006F LDS	R25,idx+1
+    0007C 3083      CPI	R24,3
+    0007D E0E0      LDI	R30,0
+    0007E 079E      CPC	R25,R30
+    0007F F499      BNE	0x0093
+(0134)                             {
+(0135)                                 VM2 = VM2 + DatoSPI;        //Parte baja de VM2
+    00080 9040 0064 LDS	R4,VM2
+    00082 9050 0065 LDS	R5,VM2+1
+    00084 0C42      ADD	R4,R2
+    00085 1C53      ADC	R5,R3
+    00086 9250 0065 STS	VM2+1,R5
+    00088 9240 0064 STS	VM2,R4
+(0136)                                 ActualizaVel();
+    0008A D074      RCALL	_ActualizaVel
+(0137)                                 idx=0;
+    0008B 2422      CLR	R2
+    0008C 2433      CLR	R3
+    0008D 9230 006F STS	idx+1,R3
+    0008F 9220 006E STS	idx,R2
+(0138)                                 Haciendo=0;                 //Termina recepcion
+    00091 9220 006D STS	Haciendo,R2
+(0139) 
+(0140) 
+(0141)                                 //Falta indicar ready (a lo mejor con SS)
+(0142) 
+(0143) 
+(0144)                             }
+(0145)                             if(idx==2)
+    00093 9180 006E LDS	R24,idx
+    00095 9190 006F LDS	R25,idx+1
+    00097 3082      CPI	R24,2
+    00098 E0E0      LDI	R30,0
+    00099 079E      CPC	R25,R30
+    0009A F481      BNE	0x00AB
+(0146)                             {
+(0147)                                 VM2 = DatoSPI<<8;           //Parte alta de VM2
+    0009B 9020 0070 LDS	R2,DatoSPI
+    0009D 9030 0071 LDS	R3,DatoSPI+1
+    0009F 2C32      MOV	R3,R2
+    000A0 2422      CLR	R2
+    000A1 9230 0065 STS	VM2+1,R3
+    000A3 9220 0064 STS	VM2,R2
+(0148)                                 idx=3;
+    000A5 E083      LDI	R24,3
+    000A6 E090      LDI	R25,0
+    000A7 9390 006F STS	idx+1,R25
+    000A9 9380 006E STS	idx,R24
+(0149)                             }
+(0150)                             if(idx==1)
+    000AB 9180 006E LDS	R24,idx
+    000AD 9190 006F LDS	R25,idx+1
+    000AF 3081      CPI	R24,1
+    000B0 E0E0      LDI	R30,0
+    000B1 079E      CPC	R25,R30
+    000B2 F4A1      BNE	0x00C7
+(0151)                             {
+(0152)                                 VM1 = VM1 + DatoSPI;        //Parte baja de VM1
+    000B3 9020 0070 LDS	R2,DatoSPI
+    000B5 9030 0071 LDS	R3,DatoSPI+1
+    000B7 9040 0062 LDS	R4,VM1
+    000B9 9050 0063 LDS	R5,VM1+1
+    000BB 0C42      ADD	R4,R2
+    000BC 1C53      ADC	R5,R3
+    000BD 9250 0063 STS	VM1+1,R5
+    000BF 9240 0062 STS	VM1,R4
+(0153)                                 idx=2;
+    000C1 E082      LDI	R24,2
+    000C2 E090      LDI	R25,0
+    000C3 9390 006F STS	idx+1,R25
+    000C5 9380 006E STS	idx,R24
+(0154)                             }
+(0155)                             if(idx==0)
+    000C7 9020 006E LDS	R2,idx
+    000C9 9030 006F LDS	R3,idx+1
+    000CB 2022      TST	R2
+    000CC F4B1      BNE	0x00E3
+    000CD 2033      TST	R3
+    000CE F4A1      BNE	0x00E3
+(0156)                             {
+(0157)                                 VM1 = DatoSPI<<8;           //Parte alta de VM1
+    000CF 9020 0070 LDS	R2,DatoSPI
+    000D1 9030 0071 LDS	R3,DatoSPI+1
+    000D3 2C32      MOV	R3,R2
+    000D4 2422      CLR	R2
+    000D5 9230 0063 STS	VM1+1,R3
+    000D7 9220 0062 STS	VM1,R2
+(0158)                                 idx=1;
+    000D9 E081      LDI	R24,1
+    000DA E090      LDI	R25,0
+    000DB 9390 006F STS	idx+1,R25
+    000DD 9380 006E STS	idx,R24
+(0159)                             }
+(0160)                             break;
+    000DF C003      RJMP	0x00E3
+(0161) 
+(0162)                     case 'P':   //Adquirir posicion de lazo cerrado de ambos motores
+(0163) 
+(0164)                             break;
+(0165) 
+(0166)                     case 'S':   //El maestro va a actualizar los parametros del PID
+(0167) //                            if(idx<455) //0 hasta penultimo
+(0168) //                            {
+(0169) //                                DatoSPI = SPI_SlaveTransfer(Haciendo,0);
+(0170) //                                EEPROM_write(idx,DatoSPI);
+(0171) //                                idx=idx+1;
+(0172) //                            }
+(0173) //                            else        //ultimo 455
+(0174) //                            {
+(0175) //                                DatoSPI = SPI_SlaveTransfer(0,0);
+(0176) //                                EEPROM_write(idx,DatoSPI);
+(0177) //                                Haciendo=0;
+(0178) //                                CargaParametros(); //actualiza parametros
+(0179) //                            }
+(0180)                             break;
+(0181) 
+(0182)                     case 'R':   //El maestro va a leer los parametros del PID
+(0183) //                            DatoSPI = EEPROM_read(idx); idx=idx+1;
+(0184) //                            Haciendo = SPI_SlaveTransfer(DatoSPI,0); //Son 455 datos en total
+(0185) //                            //Haciendo = SPI_SlaveTransfer(idx,0); //Son 455 datos en total
+(0186)                             break;
+(0187) 
+(0188)                     default:    Haciendo=0; break;
+    000E0 2422      CLR	R2
+    000E1 9220 006D STS	Haciendo,R2
+(0189)                 }
+(0190)             }
+(0191) 
+(0192) 
+(0193) 
+(0194)         }
+(0195)         CLR_LEDV;
+    000E3 98AB      CBI	0x15,3
+(0196) 
+(0197) 
+(0198)     }
+    000E4 CF5C      RJMP	0x0041
+    000E5 9508      RET
+(0199) }
+(0200) 
+(0201) //!------------------------------ FUNCIONES DEL USUARIO -------------------------------
+(0202) void Config(void)
+(0203) {
+(0204)     CLI();
+_Config:
+    000E6 94F8      BCLR	7
+(0205) 
+(0206)     //PB0	(salida) 		   LPWM M2
+(0207)     //PB1	(salida) 	   	   Enable M2
+(0208)     //PB2	(entrada pull up)  SS   SPI
+(0209)     //PB3	(entrada)	   	   MOSI SPI
+(0210)     //PB4	(salida)		   MISO SPI
+(0211)     //PB5	(entrada)		   SCK  SPI
+(0212)     //PB6	XTAL1
+(0213)     //PB7	XTAL2
+(0214)     PORTB = 0b00000100;
+    000E7 E084      LDI	R24,4
+    000E8 BB88      OUT	0x18,R24
+(0215)     DDRB  = 0b00010011;
+    000E9 E183      LDI	R24,0x13
+    000EA BB87      OUT	0x17,R24
+(0216) 
+(0217)     //PC0	(entrada ADC) 	   Corriente IM1
+(0218)     //PC1	(entrada ADC) 	   Corriente IM2
+(0219)     //PC2	(entrada) 		   Error o sobrecorriente drivers M1 y M2
+(0220)     //PC3	(salida) 		   Led verde ?
+(0221)     //PC4	(?)				   SDA I2C
+(0222)     //PC5	(?)				   SCL I2C
+(0223)     //PC6	(entrada)		   RESET SPI
+(0224)     PORTD = 0b00000000;
+    000EB 2422      CLR	R2
+    000EC BA22      OUT	0x12,R2
+(0225)     DDRC  = 0b00001000;
+    000ED E088      LDI	R24,0x8
+    000EE BB84      OUT	0x14,R24
+(0226) 
+(0227)     //PD0	(entrada)		   RX UART
+(0228)     //PD1	(salida)		   TX UART
+(0229)     //PD2	(entrada INT0)	   Encoder M2
+(0230)     //PD3	(entrada INT1)	   Encoder M1
+(0231)     //PD4	(salida) 		   RPWM M1
+(0232)     //PD5	(salida)		   LPWM M1
+(0233)     //PD6	(salida)		   Enable M1
+(0234)     //PD7	(salida)		   RPWM M2
+(0235)     PORTD = 0b00000000;
+    000EF BA22      OUT	0x12,R2
+(0236)     DDRD  = 0b11110010;
+    000F0 EF82      LDI	R24,0xF2
+    000F1 BB81      OUT	0x11,R24
+(0237) 
+(0238)     //------------- SPI
+(0239)     SPCR = (1<<SPE);           // Enable SPI
+    000F2 E480      LDI	R24,0x40
+    000F3 B98D      OUT	0x0D,R24
+(0240) 
+(0241) 
+(0242)     //-------------PWM 1 y 2 usando Timer1
+(0243)     TCCR1A=0x00;
+    000F4 BC2F      OUT	0x2F,R2
+(0244)     TCCR1B=0x01;  		  	  	    //clk/1 para usar 10 o 12 bits
+    000F5 E081      LDI	R24,1
+    000F6 BD8E      OUT	0x2E,R24
+(0245)     //TCCR1B=0x02;  		  	  	  //clk/8 para usar 9bits
+(0246)                                     //Si conteo desde TIMER1 hasta OVF
+(0247)                                     //                                   clk/1	 clk/8     clk/64
+(0248)                                     //16 bits TIM1=65536-65536=0000       244Hz    30.5Hz    3.8Hz
+(0249)                                     //15 bits TIM1=65536-32768=8000       488Hz    61Hz      7.6Hz
+(0250)                                     //14 bits TIM1=65536-16384=C000       976Hz   122Hz     15Hz
+(0251)                                     //12 bits TIM1=65536-4096 =F000      3906Hz   488Hz     61Hz
+(0252)                                     //10 bits TIM1=65536-1024 =FC00 	15625Hz  1953Hz    244Hz
+(0253)                                     //9  bits TIM1=65536-512  =FE00	    31250Hz  3906Hz    448Hz
+(0254)                                     //8  bits TIM1=65536-256  =FF00	    62500Hz  7812Hz    976Hz
+(0255)                                     //y asi OCR=TIM1+vel
+(0256)     TCNT1=0xF000;                   //Para 12 bits
+    000F7 E080      LDI	R24,0
+    000F8 EF90      LDI	R25,0xF0
+    000F9 BD9D      OUT	0x2D,R25
+    000FA BD8C      OUT	0x2C,R24
+(0257)     //TCNT1=0xFC00;                   //Para 10 bits
+(0258)     //TCNT1=0xFE00;                   //Para 9 bits
+(0259)     TIMSK=0x1C;					    //habilitar interrupciones compare A, B y overflow
+    000FB E18C      LDI	R24,0x1C
+    000FC BF89      OUT	0x39,R24
+(0260)     SEI();
+    000FD 9478      BSET	7
+    000FE 9508      RET
+(0261) }
+(0262) 
+(0263) //!------------------------------- actualizar la velocidad de los motores
+(0264) void ActualizaVel(void)
+(0265) {
+(0266)     //Actualizar PWM MOTOR1
+(0267)     if(VM1!=0)
+_ActualizaVel:
+    000FF 9020 0062 LDS	R2,VM1
+    00101 9030 0063 LDS	R3,VM1+1
+    00103 2022      TST	R2
+    00104 F411      BNE	0x0107
+    00105 2033      TST	R3
+    00106 F0E9      BEQ	0x0124
+(0268)     {
+(0269)         if(VM1<0)                   //hacia atras VM1
+    00107 01C1      MOVW	R24,R2
+    00108 3080      CPI	R24,0
+    00109 E0E0      LDI	R30,0
+    0010A 079E      CPC	R25,R30
+    0010B F464      BGE	0x0118
+(0270)         {
+(0271)             VM1=-VM1;
+    0010C 9580      COM	R24
+    0010D 9590      COM	R25
+    0010E 5F8F      SUBI	R24,0xFF
+    0010F 4F9F      SBCI	R25,0xFF
+    00110 9390 0063 STS	VM1+1,R25
+    00112 9380 0062 STS	VM1,R24
+(0272)             dM1=2;
+    00114 E082      LDI	R24,2
+    00115 9380 0066 STS	dM1,R24
+(0273)         }
+    00117 C003      RJMP	0x011B
+(0274)         else                        //hacia adelante VM1
+(0275)         {
+(0276)             dM1=1;
+    00118 E081      LDI	R24,1
+    00119 9380 0066 STS	dM1,R24
+(0277)         }
+(0278)         OCR1A = 0xF000 + VM1;//&0x0FFF;
+    0011B 9180 0062 LDS	R24,VM1
+    0011D 9190 0063 LDS	R25,VM1+1
+    0011F 5080      SUBI	R24,0
+    00120 4190      SBCI	R25,0x10
+    00121 BD9B      OUT	0x2B,R25
+    00122 BD8A      OUT	0x2A,R24
+(0279)     }
+    00123 C005      RJMP	0x0129
+(0280)     else
+(0281)     {
+(0282)         dM1=0;                     //stop
+    00124 2422      CLR	R2
+    00125 9220 0066 STS	dM1,R2
+(0283)         CLR_LPWM1;
+    00127 9895      CBI	0x12,5
+(0284)         CLR_RPWM1;
+    00128 9894      CBI	0x12,4
+(0285)     }
+(0286)     //Actualizar PWM MOTOR2
+(0287)     if(VM2!=0)
+    00129 9020 0064 LDS	R2,VM2
+    0012B 9030 0065 LDS	R3,VM2+1
+    0012D 2022      TST	R2
+    0012E F411      BNE	0x0131
+    0012F 2033      TST	R3
+    00130 F0E9      BEQ	0x014E
+(0288)     {
+(0289)         if(VM2<0)                   //hacia atras VM1
+    00131 01C1      MOVW	R24,R2
+    00132 3080      CPI	R24,0
+    00133 E0E0      LDI	R30,0
+    00134 079E      CPC	R25,R30
+    00135 F464      BGE	0x0142
+(0290)         {
+(0291)             VM2=-VM2;
+    00136 9580      COM	R24
+    00137 9590      COM	R25
+    00138 5F8F      SUBI	R24,0xFF
+    00139 4F9F      SBCI	R25,0xFF
+    0013A 9390 0065 STS	VM2+1,R25
+    0013C 9380 0064 STS	VM2,R24
+(0292)             dM2=2;
+    0013E E082      LDI	R24,2
+    0013F 9380 0067 STS	dM2,R24
+(0293)         }
+    00141 C003      RJMP	0x0145
+(0294)         else                        //hacia adelante VM1
+(0295)         {
+(0296)             dM2=1;
+    00142 E081      LDI	R24,1
+    00143 9380 0067 STS	dM2,R24
+(0297)         }
+(0298)         OCR1B = 0xF000 + VM2;//&0x0FFF;
+    00145 9180 0064 LDS	R24,VM2
+    00147 9190 0065 LDS	R25,VM2+1
+    00149 5080      SUBI	R24,0
+    0014A 4190      SBCI	R25,0x10
+    0014B BD99      OUT	0x29,R25
+    0014C BD88      OUT	0x28,R24
+(0299)     }
+    0014D C005      RJMP	0x0153
+(0300)     else
+(0301)     {
+(0302)         dM2=0;                     //stop
+    0014E 2422      CLR	R2
+    0014F 9220 0067 STS	dM2,R2
+(0303)         CLR_LPWM2;
+    00151 98C0      CBI	0x18,0
+(0304)         CLR_RPWM2;
+    00152 9897      CBI	0x12,7
+(0305)     }
+    00153 9508      RET
+_ADCCH:
+  ADCres               --> R10
+  ch                   --> R16
+    00154 92AA      ST	-Y,R10
+    00155 92BA      ST	-Y,R11
+(0306) }
+(0307) 
+(0308) //!--------------------------------
+(0309) int16_t ADCCH(char ch)		    	//realizar una conversion en el canal ch
+(0310) {
+(0311)  int ADCres;
+(0312)  ADMUX=0x40|ch;
+    00156 2F80      MOV	R24,R16
+    00157 6480      ORI	R24,0x40
+    00158 B987      OUT	0x07,R24
+(0313)  ADCSRA  = 0xD7;		   		//ADC enable, ADC start convertion, No conv por interrupcion, apagar bandera conv. completa
+    00159 ED87      LDI	R24,0xD7
+    0015A B986      OUT	0x06,R24
+(0314)  		   				   		//No int enable, presc en 64 siguientes conversiones
+(0315)  while((ADCSRA&0x10)!=0x10){}   //Polling conversion completa
+    0015B B186      IN	R24,0x06
+    0015C 7180      ANDI	R24,0x10
+    0015D 3180      CPI	R24,0x10
+    0015E F7E1      BNE	0x015B
+(0316)  ADCres=ADC;            		//Read 8 low bits first (important)
+    0015F B0A4      IN	R10,0x04
+    00160 B0B5      IN	R11,0x05
+(0317)  return ADCres;
+    00161 0185      MOVW	R16,R10
+    00162 90B9      LD	R11,Y+
+    00163 90A9      LD	R10,Y+
+    00164 9508      RET
+_SPI_SlaveTransfer:
+  llamada              --> Y,+0
+  Dato                 --> R16
+    00165 933A      ST	-Y,R19
+    00166 932A      ST	-Y,R18
+(0318) }
+(0319) 
+(0320) //!------------------------------------------------ Transferencia SPI -----------------------------------------------------
+(0321) uint8_t SPI_SlaveTransfer(uint8_t Dato, char llamada)
+(0322) {
+(0323)     //dato a Transferir
+(0324)     SPDR=Dato;
+    00167 B90F      OUT	0x0F,R16
+(0325)     /*if(llamada==1)
+(0326)     {
+(0327)         //falta esperar a que el pin no sea cero debido a otro dispositivo en la red (checar, no creo que funcione)
+(0328)         //Indicar Ready
+(0329)         DDRB |= 0x04;  //poner como salida PB2 (INT0)
+(0330)         PORTB&=~0x04;  //PB2=0 (INT0)
+(0331)     }*/
+(0332)     //Limpiar bandera counter overflow y contador para comenzar envio
+(0333) 	SPSR = (1<<SPIF);//USISR = (1<<USIOIF);
+    00168 E880      LDI	R24,0x80
+    00169 B98E      OUT	0x0E,R24
+(0334) 
+(0335)     //while((USISR&(1<<USIOIF))!=(1<<USIOIF)){}; //Esperar a que se termine la transaccion
+(0336)     //while(!(SPSR & (1<<SPIF))); // Wait for reception complete
+(0337)     while((SPSR&(1<<SPIF))!=(1<<SPIF)){}; //Esperar a que se termine la transaccion
+    0016A B18E      IN	R24,0x0E
+    0016B 7880      ANDI	R24,0x80
+    0016C 3880      CPI	R24,0x80
+    0016D F7E1      BNE	0x016A
+(0338) 
+(0339)     /*if(llamada==1)
+(0340)     {
+(0341)         //Indicar busy
+(0342)         DDRB &= ~0x04; //poner como entrada PB2 (INT0)
+(0343)         PORTB|= 0x04;  //Pull up PB2 (INT0)
+(0344)     }*/
+(0345)     //Leer dato recibido
+(0346)     Dato=SPDR;
+    0016E B10F      IN	R16,0x0F
+(0347)     return Dato;
+    0016F 9622      ADIW	R28,2
+    00170 9508      RET
+_delayms:
+  j                    --> Y,+0
+  msec                 --> Y,+8
+    00171 D07A      RCALL	push_arg4
+    00172 D0AE      RCALL	push_xgsetF000
+    00173 9724      SBIW	R28,4
+(0348) }
+(0349) 
+(0350) //!--------------------------------
+(0351) void delayms(long msec)
+(0352) {
+(0353)     long j;
+(0354)     for(j=0;j<(msec*77);j++);
+    00174 E080      LDI	R24,0
+    00175 8388      ST	Y,R24
+    00176 8389      STD	Y+1,R24
+    00177 838A      STD	Y+2,R24
+    00178 838B      STD	Y+3,R24
+    00179 C010      RJMP	0x018A
+    0017A E041      LDI	R20,1
+    0017B E050      LDI	R21,0
+    0017C E060      LDI	R22,0
+    0017D E070      LDI	R23,0
+    0017E 8028      LD	R2,Y
+    0017F 8039      LDD	R3,Y+1
+    00180 804A      LDD	R4,Y+2
+    00181 805B      LDD	R5,Y+3
+    00182 0E24      ADD	R2,R20
+    00183 1E35      ADC	R3,R21
+    00184 1E46      ADC	R4,R22
+    00185 1E57      ADC	R5,R23
+    00186 8228      ST	Y,R2
+    00187 8239      STD	Y+1,R3
+    00188 824A      STD	Y+2,R4
+    00189 825B      STD	Y+3,R5
+    0018A 8428      LDD	R2,Y+8
+    0018B 8439      LDD	R3,Y+9
+    0018C 844A      LDD	R4,Y+10
+    0018D 845B      LDD	R5,Y+11
+    0018E E44D      LDI	R20,0x4D
+    0018F E050      LDI	R21,0
+    00190 E060      LDI	R22,0
+    00191 E070      LDI	R23,0
+    00192 925A      ST	-Y,R5
+    00193 924A      ST	-Y,R4
+    00194 923A      ST	-Y,R3
+    00195 922A      ST	-Y,R2
+    00196 018A      MOVW	R16,R20
+    00197 019B      MOVW	R18,R22
+    00198 D058      RCALL	empy32u|empy32s
+    00199 8028      LD	R2,Y
+    0019A 8039      LDD	R3,Y+1
+    0019B 804A      LDD	R4,Y+2
+    0019C 805B      LDD	R5,Y+3
+    0019D 1620      CP	R2,R16
+    0019E 0631      CPC	R3,R17
+    0019F 0642      CPC	R4,R18
+    001A0 0653      CPC	R5,R19
+    001A1 F2C4      BLT	0x017A
+    001A2 9624      ADIW	R28,4
+    001A3 D082      RCALL	pop_xgsetF000
+    001A4 9624      ADIW	R28,4
+    001A5 9508      RET
+(0355) 
+(0356) }
+(0357) //------------------------------- FUNCIONES DE INTERRUPCION --------------------------
+(0358) //------------------------------- FUNCIONES DE INTERRUPCION --------------------------
+(0359) //interrupcion externa 0
+(0360) #pragma interrupt_handler int0_isr:2
+(0361) void int0_isr(void)
+(0362) { }
+_int0_isr:
+    001A6 9518      RETI
+(0363) //interrupcion externa 1
+(0364) #pragma interrupt_handler int1_isr:3
+(0365) void int1_isr(void)
+(0366) { }
+_int1_isr:
+    001A7 9518      RETI
+(0367) //timer 2 comparacion igual
+(0368) #pragma interrupt_handler timer2_comp_isr:4
+(0369) void timer2_comp_isr(void)
+(0370) { }
+_timer2_comp_isr:
+    001A8 9518      RETI
+(0371) //timer 2 overflow
+(0372) #pragma interrupt_handler timer2_ovf_isr:5
+(0373) void timer2_ovf_isr(void)
+(0374) { }
+_timer2_ovf_isr:
+    001A9 9518      RETI
+(0375) //timer 1 input capture
+(0376) #pragma interrupt_handler timer1_capt_isr:6
+(0377) void timer1_capt_isr(void)
+(0378) { }
+_timer1_capt_isr:
+    001AA 9518      RETI
+_timer1_compa_isr:
+    001AB 920A      ST	-Y,R0
+    001AC B60F      IN	R0,0x3F
+    001AD 920A      ST	-Y,R0
+(0379) //timer 1 comparacion igual A
+(0380) #pragma interrupt_handler timer1_compa_isr:7
+(0381) void timer1_compa_isr(void)
+(0382) {
+(0383)     CLR_LPWM1;
+    001AE 9895      CBI	0x12,5
+(0384)     CLR_RPWM1;
+    001AF 9894      CBI	0x12,4
+    001B0 9009      LD	R0,Y+
+    001B1 BE0F      OUT	0x3F,R0
+    001B2 9009      LD	R0,Y+
+    001B3 9518      RETI
+_timer1_compb_isr:
+    001B4 920A      ST	-Y,R0
+    001B5 B60F      IN	R0,0x3F
+    001B6 920A      ST	-Y,R0
+(0385) }
+(0386) //timer 1 comparacion igual B
+(0387) #pragma interrupt_handler timer1_compb_isr:8
+(0388) void timer1_compb_isr(void)
+(0389) {
+(0390)     CLR_LPWM2;
+    001B7 98C0      CBI	0x18,0
+(0391)     CLR_RPWM2;
+    001B8 9897      CBI	0x12,7
+    001B9 9009      LD	R0,Y+
+    001BA BE0F      OUT	0x3F,R0
+    001BB 9009      LD	R0,Y+
+    001BC 9518      RETI
+_timer1_ovf_isr:
+    001BD 938A      ST	-Y,R24
+    001BE 939A      ST	-Y,R25
+    001BF B78F      IN	R24,0x3F
+    001C0 938A      ST	-Y,R24
+(0392) }
+(0393) //timer 1 overflow
+(0394) #pragma interrupt_handler timer1_ovf_isr:9
+(0395) void timer1_ovf_isr(void)
+(0396) {
+(0397)   TCNT1=0xF000;          //reinicializar timer 12 bits
+    001C1 E080      LDI	R24,0
+    001C2 EF90      LDI	R25,0xF0
+    001C3 BD9D      OUT	0x2D,R25
+    001C4 BD8C      OUT	0x2C,R24
+(0398)   //Motor 1
+(0399)   if(dM1==1)			 //hacia adelante M1
+    001C5 9180 0066 LDS	R24,dM1
+    001C7 3081      CPI	R24,1
+    001C8 F411      BNE	0x01CB
+(0400)   {
+(0401)      SET_RPWM1;
+    001C9 9A94      SBI	0x12,4
+(0402)      CLR_LPWM1;
+    001CA 9895      CBI	0x12,5
+(0403)   }
+(0404)   if(dM1==2)			 //hacia atras M1
+    001CB 9180 0066 LDS	R24,dM1
+    001CD 3082      CPI	R24,2
+    001CE F411      BNE	0x01D1
+(0405)   {
+(0406)      CLR_RPWM1;
+    001CF 9894      CBI	0x12,4
+(0407)      SET_LPWM1;
+    001D0 9A95      SBI	0x12,5
+(0408)   }
+(0409)   //Motor 2
+(0410)   if(dM2==1)			 //hacia adelante M2
+    001D1 9180 0067 LDS	R24,dM2
+    001D3 3081      CPI	R24,1
+    001D4 F411      BNE	0x01D7
+(0411)   {
+(0412)      SET_RPWM2;
+    001D5 9A97      SBI	0x12,7
+(0413)      CLR_LPWM2;
+    001D6 98C0      CBI	0x18,0
+(0414)   }
+(0415)   if(dM2==2)			 //hacia atras M2
+    001D7 9180 0067 LDS	R24,dM2
+    001D9 3082      CPI	R24,2
+    001DA F411      BNE	0x01DD
+(0416)   {
+(0417)      CLR_RPWM2;
+    001DB 9897      CBI	0x12,7
+(0418)      SET_LPWM2;
+    001DC 9AC0      SBI	0x18,0
+(0419)   }
+    001DD 9189      LD	R24,Y+
+    001DE BF8F      OUT	0x3F,R24
+    001DF 9199      LD	R25,Y+
+    001E0 9189      LD	R24,Y+
+    001E1 9518      RETI
+(0420) }
+(0421) 
+(0422) 
+(0423) //timer 0 overflow
+(0424) #pragma interrupt_handler timer0_ovf_isr:10
+(0425) void timer0_ovf_isr(void)
+(0426) { }
+_timer0_ovf_isr:
+    001E2 9518      RETI
+(0427) //SPI completo
+(0428) #pragma interrupt_handler spi_stc_isr:11
+(0429) void spi_stc_isr(void)
+(0430) { }
+_spi_stc_isr:
+    001E3 9518      RETI
+(0431) //UART byte recibido
+(0432) #pragma interrupt_handler uart0_rx_isr:12
+(0433) void uart0_rx_isr(void)
+(0434) { }
+_uart0_rx_isr:
+    001E4 9518      RETI
+(0435) //UART registro de datos vacio
+(0436) #pragma interrupt_handler uart0_udre_isr:13
+(0437) void uart0_udre_isr(void)
+(0438) { }
+_uart0_udre_isr:
+    001E5 9518      RETI
+(0439) //UART byte transmitido
+(0440) #pragma interrupt_handler uart0_tx_isr:14
+(0441) void uart0_tx_isr(void)
+(0442) { }
+_uart0_tx_isr:
+    001E6 9518      RETI
+(0443) //ADC conversion completa
+(0444) #pragma interrupt_handler adc_isr:15
+(0445) void adc_isr(void)
+(0446) { }
+_adc_isr:
+    001E7 9518      RETI
+(0447) //EEPROM listo
+(0448) #pragma interrupt_handler eeprom_ready_isr:16
+(0449) void eeprom_ready_isr(void)
+(0450) { }
+_eeprom_ready_isr:
+    001E8 9518      RETI
+(0451) //comparador analogico
+(0452) #pragma interrupt_handler ana_comp_isr:17
+(0453) void ana_comp_isr(void)
+(0454) { }
+_ana_comp_isr:
+    001E9 9518      RETI
+(0455) //twi completo
+(0456) #pragma interrupt_handler twi_isr:18
+(0457) void twi_isr(void)
+(0458) { }
+_twi_isr:
+    001EA 9518      RETI
+(0459) //FLASH guardado listo
+(0460) #pragma interrupt_handler spm_rdy_isr:19
+(0461) void spm_rdy_isr(void)
+(0462) { }
+_spm_rdy_isr:
+    001EB 9518      RETI
