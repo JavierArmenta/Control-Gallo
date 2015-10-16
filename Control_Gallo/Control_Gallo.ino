@@ -25,6 +25,14 @@
 
 
 
+//bateria
+#include "TM1651.h"
+#define CLK 24//pins definitions for TM1651 and can be changed to other ports       
+#define DIO 26
+TM1651 batteryDisplay(CLK,DIO);
+
+
+
 #define SONAR_TRIGGER_PIN_CENTRO     2
 #define SONAR_ECHO_PIN_CENTRO        3
 #define SONAR_TRIGGER_PIN_IZQ     4
@@ -99,6 +107,11 @@ void setup()
   
    pinMode(SONAR_TRIGGER_PIN_TRASERO, OUTPUT);
    pinMode(SONAR_ECHO_PIN_TRASERO, INPUT);
+
+
+
+    batteryDisplay.init();
+  batteryDisplay.set(BRIGHTEST);//BRIGHT_TYPICAL = 2,BRIGHT_DARKEST = 0,BRIGHTEST = 7;
 }
 
 
@@ -139,7 +152,7 @@ EnviaVelocidad();
    
 }
 
-
+bateria();
 
 }
 
@@ -463,4 +476,21 @@ void distancia_medida()
    
 }
 
+
+void bateria()
+{
+  batteryDisplay.displayLevel(5);
+  batteryDisplay.frame(FRAME_ON);
+  delay(1000);
+  batteryDisplay.displayLevel(4);
+  delay(1000);
+  batteryDisplay.displayLevel(3);
+  delay(1000);
+  batteryDisplay.displayLevel(2);
+  delay(1000);
+  batteryDisplay.displayLevel(1);
+  delay(1000);
+
+  
+}
 
